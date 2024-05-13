@@ -1,11 +1,11 @@
 {
     "name": "Launcher-Melancolique",
     "preductname": "Launcher Melancolique",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Launcher moddé pour la survie",
     "main": "src/app.js",
     "author": {
-        "name": "luuxis, atmoz, Inc.",
+        "name": "Atmoz, luuxis.",
         "email": "contact@luuxis.fr",
         "url": "https://github.com/luuxis"
     },
