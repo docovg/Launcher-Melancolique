@@ -194,6 +194,19 @@
     justify-content: center;
 }
 
+.social-block:hover {
+    display: flex;
+    background: #c7bebecc;
+    width: 90px;
+    height: 90px;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+    font-size: 2rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
 .social-block .icon-social {
     pointer-events: none;
     background-repeat: no-repeat;
@@ -254,10 +267,14 @@
     justify-content: space-between;
     align-items: center;
     position: relative;
+    cursor: pointer;
     border: solid 3px var(--element-color);
     border-radius: 15px;
     height: 3.2rem;
     padding-right: 1.9rem;
+}
+.play-instance:hover {
+    border: solid 3px #3bab21;
 }
 
 .play-btn {
@@ -320,6 +337,14 @@
     font-size: 3rem;
     color: var(--element-color);
     margin: 0 1.5rem;
+}
+.settings-btn:hover {
+    width: 3rem;
+    height: 3rem;
+    font-size: 3rem;
+    color: #1ac707;
+    margin: 0 1.5rem;
+    cursor: pointer;
 }
 
 .instance-popup {
