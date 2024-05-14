@@ -35,6 +35,7 @@
     font-size: inherit;
     font-weight: bold;
     margin: 15px 10px;
+    cursor: pointer;
 }
 
 .input-login .email,
