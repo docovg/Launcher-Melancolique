@@ -6,6 +6,30 @@
 const { app, ipcMain, nativeTheme } = require('electron');
 const { Microsoft } = require('minecraft-java-core');
 const { autoUpdater } = require('electron-updater')
+ // RPC
+const RPC = require('discord-rpc'); // On défini la dépendance et l'abréviation RPC
+const rpc = new RPC.Client({
+    transport: "ipc" // Connexion à l'API si nécessaire
+});
+
+rpc.on("ready", () => {
+    rpc.setActivity({
+        details: "Serv privé", // Texte en dessous du titre du RPC
+        state: "Survie Privée", // Texte en dessous des details
+        startTimestamp: new Date(), // Défini la durée de lancement du launcher
+        largeImageKey: 'https://abdelnaim.fr/637837528070834032.png', // Définition de la grande image
+        largeImageText: 'Minecraft moddé 1.16.5', // Texte à afficher lorsque l'on passe la souris dessus (grande image)
+        smallImageKey: 'https://i.gifer.com/ZKZx.gif', // Définition de la petite image
+        smallImageText: 'Survie privée' // Texte à afficher lorsque l'on passe la souris dessus (petite image)
+    });
+    console.log("La RichPresence est allume"); // Affirmation comme quoi la RPC est bien lancée dans la console
+})
+
+rpc.login({
+    clientId: "557912813360644096" // https://discord.com/developers/applications
+})
+ //
+
 
 const path = require('path');
 const fs = require('fs');
