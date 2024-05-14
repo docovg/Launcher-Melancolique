@@ -14,13 +14,13 @@ const rpc = new RPC.Client({
 
 rpc.on("ready", () => {
     rpc.setActivity({
-        details: "Serv privé", // Texte en dessous du titre du RPC
-        state: "Survie Privée", // Texte en dessous des details
+        details: "Serveur privé", // Texte en dessous du titre du RPC
+        state: "Survie moddé 1.16.5", // Texte en dessous des details
         startTimestamp: new Date(), // Défini la durée de lancement du launcher
         largeImageKey: 'https://abdelnaim.fr/637837528070834032.png', // Définition de la grande image
         largeImageText: 'Minecraft moddé 1.16.5', // Texte à afficher lorsque l'on passe la souris dessus (grande image)
-        smallImageKey: 'https://i.gifer.com/ZKZx.gif', // Définition de la petite image
-        smallImageText: 'Survie privée' // Texte à afficher lorsque l'on passe la souris dessus (petite image)
+        smallImageKey: 'https://static-00.iconduck.com/assets.00/minecraft-icon-2048x2048-3ifq7gy7.png', // Définition de la petite image
+        smallImageText: 'Survie privé' // Texte à afficher lorsque l'on passe la souris dessus (petite image)
     });
     console.log("La RichPresence est allume"); // Affirmation comme quoi la RPC est bien lancée dans la console
 })
