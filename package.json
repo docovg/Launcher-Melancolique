@@ -1,7 +1,7 @@
 {
     "name": "Launcher-Melancolique",
     "preductname": "Launcher Melancolique",
-    "version": "1.0.9",
+    "version": "1.1.0",
     "description": "Launcher moddé pour la survie",
     "main": "src/app.js",
     "author": {
@@ -9,7 +9,7 @@
         "email": "contact@luuxis.fr",
         "url": "https://github.com/luuxis"
     },
-    "url": "http://89.213.131.80/plesk-site-preview/abdelnaim.fr/https/89.213.131.80/Selvania-Launcher-WEB-Folder/",
+    "url": "https://abdelnaim.fr/launchermelancoliqueWEB/",
     "scripts": {
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
