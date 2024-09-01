@@ -86,12 +86,12 @@
  ******************************************************************************/
 
 .new-tab {
-    margin: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 85%;
-    height: 100%;
+    width: 35%;
+    height: 90%;
+    right: 50%;
 }
 
 .titre-tab-new {
@@ -99,7 +99,6 @@
     font-size: 2rem;
     padding: 0.5rem 1rem;
     border-radius: 2rem;
-    background: var(--background-transparent);
     color: var(--color);
 }
 
@@ -125,8 +124,6 @@
 }
 
 .header-text .title {
-    text-decoration: underline;
-    text-underline-offset: 3px;
     font-size: 1.2rem;
     text-align: center;
 }
@@ -170,9 +167,9 @@
     position: absolute;
     display: flex;
     bottom: 0;
-    right: 0;
-    width: 15%;
-    height: calc(80% - 1rem);
+    right: 50%;
+    width: 23%;
+    height: 69%;
     justify-content: center;
     margin-bottom: 1rem;
 }
@@ -226,7 +223,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    width: 70%;
     height: 90px;
     background: var(--background-transparent);
     border-top-left-radius: 40px 40px;
@@ -277,7 +274,7 @@
     padding-right: 1.9rem;
 }
 .play-instance:hover {
-    border: solid 3px #3bab21;
+    border: solid 3px #9e1f0e;
 }
 
 .play-btn {
@@ -345,7 +342,7 @@
     width: 3rem;
     height: 3rem;
     font-size: 3rem;
-    color: #1ac707;
+    color: #971e0e;
     margin: 0 1.5rem;
     cursor: pointer;
 }

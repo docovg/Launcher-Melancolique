@@ -1,7 +1,7 @@
 {
     "name": "Launcher-Melancolique",
     "preductname": "Launcher Melancolique",
-    "version": "1.1.2",
+    "version": "1.1.4",
     "description": "Launcher moddé pour la survie",
     "main": "src/app.js",
     "author": {
@@ -14,7 +14,7 @@
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
         "build": "node build.js --obf=true --build=platform",
-        "icon": "node build.js --icon=https://abdelnaim.fr/iconlauncher.png"
+        "icon": "node build.js --icon=https://abdelnaim.fr/637837528070834032.png"
     },
     "license": "CCANC",
     "nodemonConfig": {
