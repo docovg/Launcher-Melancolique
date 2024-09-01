@@ -1,5 +1,5 @@
 .global {
-    --element-color: #f02e14;
+    --element-color: #00ff62;
     --transition: all 0.5s cubic-bezier(1, 0.46, 0, 1.29);
     --dark-color: #292929;
     --light-color: rgb(245, 245, 245);
@@ -9,7 +9,7 @@
     --color: #F5F5F5;
     --background: #292929;
     --background-element: #424242;
-    --background-transparent: #0a0101cc;
+    --background-transparent: #2c2c2ccc;
     --shadow: rgba(25, 25, 25, 0.7);
     --svg-color: brightness(0) saturate(100%) invert(100%) sepia(55%) saturate(23%) hue-rotate(236deg) brightness(108%) contrast(92%);
 }
