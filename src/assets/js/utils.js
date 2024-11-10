@@ -52,6 +52,12 @@ async function appdata() {
 async function addAccount(data) {
     let skin = false
     if (data?.profile?.skins[0]?.base64) skin = await new skin2D().creatHeadTexture(data.profile.skins[0].base64);
+    // Construire le lien du profil du joueur avec le nom d'utilisateur
+    const profileUrl = `https://mineskin.eu/body/${encodeURIComponent(data.name)}/100.png`;
+    // Ajouter l'iframe à `.player-body`
+    const playerBody = document.querySelector(".player-body");
+    playerBody.innerHTML = `<iframe id="iframeCode" src="${profileUrl}" style="border: none; width: 619px; height: 521px;"></iframe>`;
+
     let div = document.createElement("div");
     div.classList.add("account");
     div.id = data.ID;
@@ -80,6 +86,7 @@ async function accountSelect(data) {
 async function headplayer(skinBase64) {
     let skin = await new skin2D().creatHeadTexture(skinBase64);
     document.querySelector(".player-head").style.backgroundImage = `url(${skin})`;
+    document.querySelector(".player-body").style.backgroundImage = `url('http://163.5.141.45/skin3d/3d-api/premium/DocOVG')`;
 }
 
 async function setStatus(opt) {

@@ -249,6 +249,12 @@
     pointer-events: none;
     border-radius: 15px;
 }
+.player-body {
+    image-rendering: pixelated;
+    height: 3rem;
+    width: 3rem;
+    border-radius: 15px;
+}
 
 .player-menu {
     color: var(--element-color);

@@ -14,11 +14,11 @@ const rpc = new RPC.Client({
 
 rpc.on("ready", () => {
     rpc.setActivity({
-        details: "Serveur privé", // Texte en dessous du titre du RPC
-        state: "Survie 1.20.1", // Texte en dessous des details
+        details: "Serveur moddé privé", // Texte en dessous du titre du RPC
+        state: "Survie moddé", // Texte en dessous des details
         startTimestamp: new Date(), // Défini la durée de lancement du launcher
-        largeImageKey: 'static.wikia.nocookie.net/57b7883f-5110-4a46-a700-69381c8a66f8/scale-to-width/755', // Définition de la grande image
-        largeImageText: 'Survie 1.20.1', // Texte à afficher lorsque l'on passe la souris dessus (grande image)
+        largeImageKey: 'https://i.pinimg.com/originals/f4/52/66/f452667440b61bee8c8ee412c5b61906.gif', // Définition de la grande image
+        largeImageText: 'Survie moddé', // Texte à afficher lorsque l'on passe la souris dessus (grande image)
         smallImageKey: 'https://static-00.iconduck.com/assets.00/minecraft-icon-2048x2048-3ifq7gy7.png', // Définition de la petite image
         smallImageText: 'Survie privé' // Texte à afficher lorsque l'on passe la souris dessus (petite image)
     });
