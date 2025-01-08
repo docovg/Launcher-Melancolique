@@ -15,8 +15,12 @@
 }
 
 .nav-settings p {
-    font-size: 60%;
+    font-size: 90%;
     margin-top: 80px;
+}
+
+.nav-settings h2{
+    font-size: 50%;
 }
 
 .nav-box {
@@ -33,7 +37,6 @@
 
 .nav-settings-btn {
     font-size: 50%;
-    border: solid 4px var(--element-color);
     padding: 5px 10px;
     border-radius: 10px;
     width: 70%;

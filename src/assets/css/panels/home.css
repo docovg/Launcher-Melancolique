@@ -90,8 +90,9 @@
     flex-direction: column;
     align-items: center;
     width: 35%;
-    height: 90%;
+    height: 100%;
     right: 50%;
+
 }
 
 .titre-tab-new {
