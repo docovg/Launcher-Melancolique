@@ -1,7 +1,7 @@
 {
     "name": "Launcher-Melancolique",
     "preductname": "Launcher Melancolique",
-    "version": "1.1.9",
+    "version": "1.2.0",
     "description": "Launcher moddé pour la survie",
     "main": "src/app.js",
     "author": {
@@ -32,7 +32,7 @@
     },
     "devDependencies": {
         "cross-env": "^7.0.3",
-        "electron": "^30.0.2",
+        "electron": "^33.3.1",
         "electron-builder": "^24.13.3",
         "javascript-obfuscator": "^4.1.0",
         "jimp": "^0.22.12",

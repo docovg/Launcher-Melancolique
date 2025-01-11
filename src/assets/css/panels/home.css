@@ -251,6 +251,8 @@
     border-radius: 15px;
 }
 .player-body {
+    width: 00px; /* Ajustez la largeur */
+    height: 400px; /* Ajustez la hauteur */
     image-rendering: pixelated;
     height: 3rem;
     width: 3rem;
