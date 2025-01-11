@@ -53,7 +53,7 @@ async function addAccount(data) {
     let skin = false
     if (data?.profile?.skins[0]?.base64) skin = await new skin2D().creatHeadTexture(data.profile.skins[0].base64);
     // Construire le lien du profil du joueur avec le nom d'utilisateur
-    const profileUrl = `https://starlightskins.lunareclipse.studio/render/custom/${encodeURIComponent(data.name)}/full?wideModel=https://cdn.lunareclipse.studio/model.obj&slimModel=https://cdn.lunareclipse.studio/model.obj&cameraPosition={%22x%22:%22-10%22,%22y%22:%2232.09%22,%22z%22:%22-40%22}&cameraFocalPoint={%22x%22:%223.67%22,%22y%22:%2216.31%22,%22z%22:%223.35%22}`;
+    const profileUrl = `https://starlightskins.lunareclipse.studio/render/lunging/${encodeURIComponent(data.name)}/full?wideModel=https://cdn.lunareclipse.studio/model.obj&slimModel=https://cdn.lunareclipse.studio/model.obj&cameraPosition={%22x%22:%22-10%22,%22y%22:%2232.09%22,%22z%22:%22-40%22}&cameraFocalPoint={%22x%22:%223.67%22,%22y%22:%2216.31%22,%22z%22:%223.35%22}`;
     // Ajouter l'iframe à `.player-body`
     const playerBody = document.querySelector(".player-body");
     playerBody.innerHTML = `<iframe id="iframeCode" src="${profileUrl}" style="border: none; width: 612px; height: 580px;"></iframe>`;
