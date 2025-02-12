@@ -277,14 +277,21 @@
     align-items: center;
     position: relative;
     cursor: pointer;
-    border: solid 3px var(--element-color);
-    border-radius: 15px;
+    width: 260px;
     height: 3.2rem;
+    background: url('https://abdelnaim.fr/launchermelancoliquesite/button-bg.png') no-repeat center/cover; 
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding-right: 1.9rem;
+    transition: background 0.3s ease-in-out; /* Ajoute une transition fluide */
 }
+
 .play-instance:hover {
-    border: solid 3px #9e1f0e;
+    background: url('https://abdelnaim.fr/launchermelancoliquesite/button-bg-bb.png') no-repeat center/cover;
 }
+
 
 .play-btn {
     border: none;
