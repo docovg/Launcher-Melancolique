@@ -143,9 +143,9 @@ class Launcher {
                     console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
                     popupRefresh.openPopup({
                         title: 'Connexion',
-                        content: `Refresh account Type: ${account.meta.type} | Nom d'utilisateur: ${account.name}`,
+                        content: `Type de compte : ${account.meta.type} | Nom d'utilisateur : ${account.name}`,
                         color: 'var(--color)',
-                        background: false
+                        background: true
                     });
 
                     let refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);

@@ -284,7 +284,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-right: 1.9rem;
     transition: background 0.3s ease-in-out; /* Ajoute une transition fluide */
 }
 
@@ -308,7 +307,7 @@
     display: flex;
     align-items: center;
     position: absolute;
-    right: -3;
+    right: -48px;
     top: -2;
     color: var(--element-color);
     font-size: 1rem;
