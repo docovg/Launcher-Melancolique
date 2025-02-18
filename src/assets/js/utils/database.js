@@ -6,6 +6,9 @@
 const { NodeBDD, DataType } = require('node-bdd');
 const nodedatabase = new NodeBDD()
 const { ipcRenderer } = require('electron')
+const fs = require('fs');
+
+import path from 'path';
 
 let dev = process.env.NODE_ENV === 'dev';
 
@@ -13,6 +16,7 @@ class database {
     async creatDatabase(tableName, tableConfig) {
         const userDataPath = await ipcRenderer.invoke('path-user-data');
         const finalPath = path.join(userDataPath, 'databases');
+
 
         // Créer le dossier si besoin
         if (!fs.existsSync(finalPath)) {
