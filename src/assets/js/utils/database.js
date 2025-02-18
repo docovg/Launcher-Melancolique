@@ -11,11 +11,21 @@ let dev = process.env.NODE_ENV === 'dev';
 
 class database {
     async creatDatabase(tableName, tableConfig) {
+        // Déclaration et initialisation de userDataPath
+        const userDataPath = await ipcRenderer.invoke('path-user-data');
+        // Construction du chemin final en fonction du mode
+        const finalPath = `${userDataPath}${dev ? '../..' : '/databases'}`;
+
+        // Logs pour vérifier les valeurs
+        console.log('[DEBUG] Mode dev =>', dev);
+        console.log('[DEBUG] userDataPath =>', userDataPath);
+        console.log('[DEBUG] finalPath =>', finalPath);
+
         return await nodedatabase.intilize({
             databaseName: 'Databases',
             fileType: dev ? 'sqlite' : 'db',
             tableName: tableName,
-            path: `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`,
+            path: finalPath,
             tableColumns: tableConfig,
         });
     }
