@@ -11,19 +11,17 @@ let dev = process.env.NODE_ENV === 'dev';
 
 class database {
     async creatDatabase(tableName, tableConfig) {
-        // Déclaration et initialisation de userDataPath
         const userDataPath = await ipcRenderer.invoke('path-user-data');
-        // Construction du chemin final en fonction du mode
-        const finalPath = `${userDataPath}${dev ? '../..' : '/databases'}`;
+        const finalPath = path.join(userDataPath, 'databases');
 
-        // Logs pour vérifier les valeurs
-        console.log('[DEBUG] Mode dev =>', dev);
-        console.log('[DEBUG] userDataPath =>', userDataPath);
-        console.log('[DEBUG] finalPath =>', finalPath);
+        // Créer le dossier si besoin
+        if (!fs.existsSync(finalPath)) {
+            fs.mkdirSync(finalPath, { recursive: true });
+        }
 
         return await nodedatabase.intilize({
             databaseName: 'Databases',
-            fileType: dev ? 'sqlite' : 'db',
+            fileType: 'db', // production
             tableName: tableName,
             path: finalPath,
             tableColumns: tableConfig,
