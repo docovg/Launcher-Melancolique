@@ -449,6 +449,10 @@
     background-image: url('https://staticg.sportskeeda.com/editor/2025/01/8827f-17376979472538-1920.jpg?w=640');
 }
 
+[id="UHC"]::before {
+    background-image: url('https://staticg.sportskeeda.com/editor/2025/01/8827f-17376979472538-1920.jpg?w=640');
+}
+
 #launchermelancolique::before {
     background-image: url('https://i.pinimg.com/originals/2d/82/d9/2d82d901304ed14d0ea5d44c6d12dbac.gif');
 }
