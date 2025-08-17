@@ -4,84 +4,68 @@
  */
 
 const { NodeBDD, DataType } = require('node-bdd');
-const { ipcRenderer } = require('electron');
-const fs = require('fs');
-const path = require('path');
+const nodedatabase = new NodeBDD()
+const { ipcRenderer } = require('electron')
 
-const nodedatabase = new NodeBDD();
+let dev = process.env.NODE_ENV === 'dev';
 
-class Database {
-  async createDatabase(tableName, tableConfig) {
-    // 1) Récupère le vrai dossier persistant
-    const userData = await ipcRenderer.invoke('path-user-data');
-    if (!userData || typeof userData !== 'string') {
-      throw new Error('path-user-data handler non disponible (ipcMain.handle manquant).');
+class database {
+    async creatDatabase(tableName, tableConfig) {
+        return await nodedatabase.intilize({
+            databaseName: 'Databases',
+            fileType: dev ? 'sqlite' : 'db',
+            tableName: tableName,
+            path: `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`,
+            tableColumns: tableConfig,
+        });
     }
 
-    // 2) Force un sous-dossier stable "databases"
-    const dbDir = path.join(userData, 'databases');
-    try {
-      fs.mkdirSync(dbDir, { recursive: true });
-    } catch (e) {
-      console.error('Erreur création dossier DB:', e);
-      throw e;
+    async getDatabase(tableName) {
+        return await this.creatDatabase(tableName, {
+            json_data: DataType.TEXT.TEXT,
+        });
     }
 
-    // 3) Toujours utiliser une extension SQLite (évite des comportements différents dev/prod)
-    return await nodedatabase.intilize({
-      databaseName: 'Databases',
-      fileType: 'sqlite',               // <= important
-      tableName: tableName,
-      path: dbDir,                      // <= toujours userData/databases
-      tableColumns: tableConfig,
-    });
-  }
+    async createData(tableName, data) {
+        let table = await this.getDatabase(tableName);
+        data = await nodedatabase.createData(table, { json_data: JSON.stringify(data) })
+        let id = data.id
+        data = JSON.parse(data.json_data)
+        data.ID = id
+        return data
+    }
 
-  async getDatabase(tableName) {
-    return await this.createDatabase(tableName, {
-      json_data: DataType.TEXT.TEXT,
-    });
-  }
+    async readData(tableName, key = 1) {
+        let table = await this.getDatabase(tableName);
+        let data = await nodedatabase.getDataById(table, key)
+        if (data) {
+            let id = data.id
+            data = JSON.parse(data.json_data)
+            data.ID = id
+        }
+        return data ? data : undefined
+    }
 
-  async createData(tableName, data) {
-    const table = await this.getDatabase(tableName);
-    let row = await nodedatabase.createData(table, { json_data: JSON.stringify(data) });
-    const id = row.id;
-    const payload = JSON.parse(row.json_data);
-    payload.ID = id;
-    return payload;
-  }
+    async readAllData(tableName) {
+        let table = await this.getDatabase(tableName);
+        let data = await nodedatabase.getAllData(table)
+        return data.map(info => {
+            let id = info.id
+            info = JSON.parse(info.json_data)
+            info.ID = id
+            return info
+        })
+    }
 
-  async readData(tableName, key = 1) {
-    const table = await this.getDatabase(tableName);
-    const row = await nodedatabase.getDataById(table, key);
-    if (!row) return undefined;
-    const id = row.id;
-    const payload = JSON.parse(row.json_data);
-    payload.ID = id;
-    return payload;
-  }
+    async updateData(tableName, data, key = 1) {
+        let table = await this.getDatabase(tableName);
+        await nodedatabase.updateData(table, { json_data: JSON.stringify(data) }, key)
+    }
 
-  async readAllData(tableName) {
-    const table = await this.getDatabase(tableName);
-    const rows = await nodedatabase.getAllData(table);
-    return rows.map(info => {
-      const id = info.id;
-      const payload = JSON.parse(info.json_data);
-      payload.ID = id;
-      return payload;
-    });
-  }
-
-  async updateData(tableName, data, key = 1) {
-    const table = await this.getDatabase(tableName);
-    await nodedatabase.updateData(table, { json_data: JSON.stringify(data) }, key);
-  }
-
-  async deleteData(tableName, key = 1) {
-    const table = await this.getDatabase(tableName);
-    await nodedatabase.deleteData(table, key);
-  }
+    async deleteData(tableName, key = 1) {
+        let table = await this.getDatabase(tableName);
+        await nodedatabase.deleteData(table, key)
+    }
 }
 
-module.exports = Database; 
+export default database;
