@@ -49,7 +49,7 @@ class Home {
                     blockNews.classList.add('news-block');
                     blockNews.innerHTML = `
                         <div class="news-header">
-                            <img class="server-status-icon" src="assets/images/icon.png">
+                            <img class="server-status-icon" src="assets/images/devlog.png">
                             <div class="header-text">
                                 <div class="title">${News.title}</div>
                             </div>
@@ -74,7 +74,7 @@ class Home {
                 <div class="news-header">
                         <img class="server-status-icon" src="assets/images/icon.png">
                         <div class="header-text">
-                            <div class="title">Error.</div>
+                            <div class="title">Erreur.</div>
                         </div>
                         <div class="date">
                             <div class="day">1</div>
@@ -83,7 +83,7 @@ class Home {
                     </div>
                     <div class="news-content">
                         <div class="bbWrapper">
-                            <p>Impossible de contacter le serveur des news.</br>Merci de vérifier votre configuration.</p>
+                            <p>Impossible de contacter le serveur des news.</p>
                         </div>
                     </div>`
             newsElement.appendChild(blockNews);
