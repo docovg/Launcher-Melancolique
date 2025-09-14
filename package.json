@@ -1,45 +1,48 @@
 {
-    "name": "Launcher-Melancolique",
-    "preductname": "Launcher Melancolique",
-    "version": "1.3.8",
-    "description": "Launcher moddé pour la survie",
-    "main": "src/app.js",
-    "author": {
-        "name": "Abdelnaim.",
-        "email": "contact@abdelnaim.fr",
-        "url": "https://github.com/docovg"
-    },
-    "url": "https://abdelnaim.fr/launchermelancoliqueWEB/",
-    "scripts": {
-        "start": "cross-env-shell NODE_ENV=dev electron .",
-        "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
-        "build": "node build.js --obf=true --build=platform",
-        "icon": "node build.js --icon=https://abdelnaim.fr/637837528070834032.png"
-    },
-    "license": "CCANC",
-    "nodemonConfig": {
-        "ext": "js,html,css",
-        "ignore": "**/test"
-    },
-    "dependencies": {
-        "discord-rpc": "^4.0.1",
-        "electron-updater": "^6.1.8",
-        "minecraft-java-core": "^4.0.0",
-        "node-bdd": "^2.0.3",
-        "node-fetch": "^2.7.0",
-        "xml-js": "^1.6.11"
-    },
-    "devDependencies": {
-        "cross-env": "^7.0.3",
-        "electron": "^33.3.1",
-        "electron-builder": "^24.13.3",
-        "javascript-obfuscator": "^4.1.0",
-        "jimp": "^0.22.12",
-        "nodemon": "^3.1.0",
-        "png2icons": "^2.0.1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/docovg/Launcher-Melancolique.git"
-    }
+  "name": "launcher-melancolique",
+  "productName": "Launcher Melancolique",
+  "version": "1.3.9",
+  "description": "Launcher moddé pour la survie",
+  "main": "src/app.js",
+  "author": {
+    "name": "Abdelnaim.",
+    "email": "contact@abdelnaim.fr",
+    "url": "https://github.com/docovg"
+  },
+  "url": "https://abdelnaim.fr/launchermelancoliqueWEB/",
+  "scripts": {
+    "start": "cross-env-shell NODE_ENV=dev electron .",
+    "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
+    "build": "node build.js --obf=true --build=platform",
+    "icon": "node build.js --icon=https://abdelnaim.fr/637837528070834032.png"
+  },
+  "license": "CCANC",
+  "nodemonConfig": {
+    "ext": "js,html,css",
+    "ignore": "**/test"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1",
+    "electron-updater": "^6.1.8",
+    "minecraft-java-core": "^4.0.0",
+    "node-bdd": "^2.0.3",
+    "node-fetch": "^2.7.0",
+    "xml-js": "^1.6.11"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^33.3.1",
+    "electron-builder": "^24.13.3",
+    "javascript-obfuscator": "^4.1.0",
+    "jimp": "^0.22.12",
+    "nodemon": "^3.1.0",
+    "png2icons": "^2.0.1"
+  },
+  "build": {
+    "appId": "fr.docovg.launcher.melancolique"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/docovg/Launcher-Melancolique.git"
+  }
 }
