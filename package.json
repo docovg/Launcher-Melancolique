@@ -1,13 +1,13 @@
 {
     "name": "Launcher-Melancolique",
     "preductname": "Launcher Melancolique",
-    "version": "1.3.7",
+    "version": "1.3.8",
     "description": "Launcher moddé pour la survie",
     "main": "src/app.js",
     "author": {
-        "name": "Atmoz, luuxis.",
-        "email": "contact@luuxis.fr",
-        "url": "https://github.com/luuxis"
+        "name": "Abdelnaim.",
+        "email": "contact@abdelnaim.fr",
+        "url": "https://github.com/docovg"
     },
     "url": "https://abdelnaim.fr/launchermelancoliqueWEB/",
     "scripts": {
