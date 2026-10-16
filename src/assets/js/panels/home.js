@@ -6,6 +6,7 @@ import { config, database, logger, changePanel, appdata, setStatus, pkg, popup }
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
+const path = require('path')
 
 class Home {
     static id = "home";
@@ -77,110 +78,422 @@ class Home {
     }
 
     async instancesSelect() {
-        let configClient = await this.db.readData('configClient')
-        let auth = await this.db.readData('accounts', configClient.account_selected)
-        let instancesList = await config.getInstanceList()
-        let instanceSelect = instancesList.find(i => i.name == configClient?.instance_selct) ? configClient?.instance_selct : null
-
-        let instanceBTN = document.querySelector('.play-instance')
-        let instancePopup = document.querySelector('.instance-popup')
-        let instancesListPopup = document.querySelector('.instances-List')
-        let instanceCloseBTN = document.querySelector('.close-popup')
-
-        if (instancesList.length === 1) {
-            document.querySelector('.instance-select').style.display = 'none'
-            instanceBTN.style.paddingRight = '0'
+        this.instanceUI = {
+            list: document.querySelector('.instance-library-list'),
+            count: document.querySelector('.instance-library-count'),
+            detail: document.querySelector('.instance-detail'),
+            createPopup: document.querySelector('.instance-create-popup'),
+            createForm: document.querySelector('.instance-create-dialog'),
+            nameInput: document.querySelector('.instance-name-input'),
+            versionInput: document.querySelector('.instance-version-input'),
+            loaderInput: document.querySelector('.instance-loader-input'),
+            loaderVersionInput: document.querySelector('.instance-loader-version-input'),
+            formError: document.querySelector('.instance-form-error'),
+            deletePopup: document.querySelector('.instance-delete-popup'),
+            deleteCopy: document.querySelector('.instance-delete-copy')
         }
 
-        if (!instanceSelect) {
-            let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
-            let configClient = await this.db.readData('configClient')
-            configClient.instance_selct = newInstanceSelect.name
-            instanceSelect = newInstanceSelect.name
+        this.bindInstanceManagerEvents()
+        await this.refreshInstances()
+    }
+
+    bindInstanceManagerEvents() {
+        const ui = this.instanceUI
+
+        document.querySelector('.instance-create-btn').addEventListener('click', () => this.openCreateInstance())
+        document.querySelector('.instance-dialog-close').addEventListener('click', () => this.closeCreateInstance())
+        document.querySelector('.instance-dialog-cancel').addEventListener('click', () => this.closeCreateInstance())
+        document.querySelector('.instance-delete-cancel').addEventListener('click', () => this.closeDeleteInstance())
+
+        ui.loaderInput.addEventListener('change', () => {
+            const enabled = ui.loaderInput.value !== 'none'
+            ui.loaderVersionInput.disabled = !enabled
+            if (enabled && !ui.loaderVersionInput.value) ui.loaderVersionInput.value = 'latest'
+        })
+
+        ui.createForm.addEventListener('submit', async event => {
+            event.preventDefault()
+            await this.createLocalInstance()
+        })
+
+        ui.list.addEventListener('click', async event => {
+            const button = event.target.closest('.instance-list-item')
+            if (button) await this.selectInstance(button.dataset.instance)
+        })
+
+        document.querySelector('.instance-delete-btn').addEventListener('click', () => this.openDeleteInstance())
+        document.querySelector('.instance-delete-confirm').addEventListener('click', async () => this.deleteLocalInstance())
+        document.querySelector('.play-instance').addEventListener('click', () => this.startGame())
+
+        ui.createPopup.addEventListener('click', event => {
+            if (event.target === ui.createPopup) this.closeCreateInstance()
+        })
+        ui.deletePopup.addEventListener('click', event => {
+            if (event.target === ui.deletePopup) this.closeDeleteInstance()
+        })
+
+        document.addEventListener('keydown', event => {
+            const openDialog = ui.createPopup.classList.contains('is-open')
+                ? ui.createForm
+                : ui.deletePopup.classList.contains('is-open')
+                    ? ui.deletePopup.querySelector('.instance-delete-dialog')
+                    : null
+
+            if (event.key === 'Tab' && openDialog) this.trapDialogFocus(event, openDialog)
+            if (event.key === 'Escape' && ui.createPopup.classList.contains('is-open')) this.closeCreateInstance()
+            if (event.key === 'Escape' && ui.deletePopup.classList.contains('is-open')) this.closeDeleteInstance()
+        })
+    }
+
+    async refreshInstances(preferredInstance = null) {
+        const configClient = await this.db.readData('configClient')
+        const auth = configClient?.account_selected
+            ? await this.db.readData('accounts', configClient.account_selected)
+            : null
+        const [remoteInstances, localInstances] = await Promise.all([
+            config.getInstanceList(),
+            this.db.readAllData('localInstances')
+        ])
+
+        const accessibleRemoteInstances = remoteInstances.filter(instance => {
+            if (!instance.whitelistActive) return true
+            return Array.isArray(instance.whitelist) && instance.whitelist.includes(auth?.name)
+        })
+
+        this.instances = [
+            ...accessibleRemoteInstances,
+            ...localInstances.map(instance => ({
+                ...instance,
+                source: 'local',
+                displayName: instance.displayName || instance.name
+            }))
+        ]
+
+        const selectedName = preferredInstance || configClient?.instance_selct
+        const selected = this.instances.find(instance => instance.name === selectedName) || this.instances[0] || null
+
+        if (configClient && configClient.instance_selct !== (selected?.name || null)) {
+            configClient.instance_selct = selected?.name || null
             await this.db.updateData('configClient', configClient)
         }
 
-        for (let instance of instancesList) {
-            if (instance.whitelistActive) {
-                let whitelist = instance.whitelist.find(whitelist => whitelist == auth?.name)
-                if (whitelist !== auth?.name) {
-                    if (instance.name == instanceSelect) {
-                        let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
-                        let configClient = await this.db.readData('configClient')
-                        configClient.instance_selct = newInstanceSelect.name
-                        instanceSelect = newInstanceSelect.name
-                        setStatus(newInstanceSelect.status)
-                        await this.db.updateData('configClient', configClient)
-                    }
-                }
-            } else console.log(`Initializing instance ${instance.name}...`)
-            if (instance.name == instanceSelect) setStatus(instance.status)
+        this.selectedInstance = selected
+        this.renderInstanceList()
+        await this.renderSelectedInstance()
+    }
+
+    renderInstanceList() {
+        const list = this.instanceUI.list
+        list.replaceChildren()
+
+        if (!this.instances.length) {
+            const empty = document.createElement('p')
+            empty.className = 'instance-list-empty'
+            empty.textContent = 'Aucune instance disponible. Utilise le bouton + pour en créer une.'
+            list.appendChild(empty)
         }
-        this.setInstanceName(instanceSelect)
 
-        instancePopup.addEventListener('click', async e => {
-            let configClient = await this.db.readData('configClient')
+        for (const instance of this.instances) {
+            const entry = document.createElement('div')
+            entry.className = 'instance-list-entry'
+            entry.setAttribute('role', 'listitem')
 
-            if (e.target.classList.contains('instance-elements')) {
-                let newInstanceSelect = e.target.id
-                let activeInstanceSelect = document.querySelector('.active-instance')
+            const button = document.createElement('button')
+            button.type = 'button'
+            button.className = `instance-list-item${instance.source === 'local' ? ' is-local' : ''}${instance.name === this.selectedInstance?.name ? ' is-active' : ''}`
+            button.dataset.instance = instance.name
+            button.title = instance.displayName || instance.name
+            button.setAttribute('aria-current', instance.name === this.selectedInstance?.name ? 'true' : 'false')
 
-                if (activeInstanceSelect) activeInstanceSelect.classList.toggle('active-instance');
-                e.target.classList.add('active-instance');
+            const icon = document.createElement('span')
+            icon.className = 'instance-list-icon'
+            icon.setAttribute('aria-hidden', 'true')
+            icon.textContent = this.getInstanceInitials(instance.displayName || instance.name)
 
-                configClient.instance_selct = newInstanceSelect
-                this.setInstanceName(newInstanceSelect)
-                await this.db.updateData('configClient', configClient)
-                instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
-                instancePopup.style.display = 'none'
-                let instance = await config.getInstanceList()
-                let options = instance.find(i => i.name == configClient.instance_selct)
-                await setStatus(options.status)
-            }
-        })
+            const copy = document.createElement('span')
+            copy.className = 'instance-list-copy'
 
-        instanceBTN.addEventListener('click', async e => {
-            let configClient = await this.db.readData('configClient')
-            let instanceSelect = configClient.instance_selct
-            let auth = await this.db.readData('accounts', configClient.account_selected)
+            const name = document.createElement('strong')
+            name.className = 'instance-list-name'
+            name.textContent = instance.displayName || instance.name
 
-            if (e.target.classList.contains('instance-select')) {
-                instancesListPopup.innerHTML = ''
-                for (let instance of instancesList) {
-                    if (instance.whitelistActive) {
-                        instance.whitelist.map(whitelist => {
-                            if (whitelist == auth?.name) {
-                                if (instance.name == instanceSelect) {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
-                                } else {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
-                                }
-                            }
-                        })
-                    } else {
-                        if (instance.name == instanceSelect) {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
-                        } else {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
-                        }
-                    }
-                }
+            const meta = document.createElement('span')
+            meta.className = 'instance-list-meta'
+            meta.textContent = `${instance.loadder?.minecraft_version || 'Version inconnue'} · ${this.formatLoader(instance.loadder?.loadder_type)}`
 
-                instancePopup.style.display = 'flex'
-            }
+            copy.append(name, meta)
+            button.append(icon, copy)
+            entry.appendChild(button)
+            list.appendChild(entry)
+        }
 
-            if (!e.target.classList.contains('instance-select')) this.startGame()
-        })
+        const count = this.instances.length
+        this.instanceUI.count.textContent = `${count} instance${count > 1 ? 's' : ''}`
+    }
 
-        instanceCloseBTN.addEventListener('click', () => instancePopup.style.display = 'none')
+    async selectInstance(instanceName) {
+        const instance = this.instances.find(item => item.name === instanceName)
+        if (!instance) return
+
+        this.selectedInstance = instance
+        const configClient = await this.db.readData('configClient')
+        configClient.instance_selct = instance.name
+        await this.db.updateData('configClient', configClient)
+
+        this.renderInstanceList()
+        await this.renderSelectedInstance()
+    }
+
+    async renderSelectedInstance() {
+        const instance = this.selectedInstance
+        const detail = this.instanceUI.detail
+        const playButton = document.querySelector('.play-instance')
+        const playAction = document.querySelector('.play-btn')
+
+        detail.classList.toggle('has-instance', Boolean(instance))
+        detail.classList.toggle('is-local', instance?.source === 'local')
+        playButton.classList.toggle('is-disabled', !instance)
+        playButton.setAttribute('aria-disabled', instance ? 'false' : 'true')
+        playAction.disabled = !instance
+
+        if (!instance) {
+            this.setInstanceName('')
+            this.updateLocalStatus(null)
+            return
+        }
+
+        const displayName = instance.displayName || instance.name
+        const loaderType = this.formatLoader(instance.loadder?.loadder_type)
+        const isLocal = instance.source === 'local'
+
+        detail.querySelector('.instance-detail-name').textContent = displayName
+        detail.querySelector('.instance-detail-name').title = displayName
+        detail.querySelector('.instance-detail-description').textContent = isLocal
+            ? 'Configuration privée enregistrée sur cet ordinateur.'
+            : 'Instance officielle synchronisée avec le serveur du launcher.'
+        detail.querySelector('.instance-minecraft-version').textContent = instance.loadder?.minecraft_version || 'Inconnue'
+        detail.querySelector('.instance-loader-type').textContent = loaderType
+        detail.querySelector('.instance-loader-version').textContent = instance.loadder?.loadder_type === 'none'
+            ? 'Non applicable'
+            : instance.loadder?.loadder_version || 'latest'
+        detail.querySelector('.instance-sync-mode').textContent = isLocal
+            ? 'Locale uniquement'
+            : instance.verify ? 'Vérifiée au lancement' : 'Standard'
+
+        const badge = detail.querySelector('.instance-source-badge')
+        badge.textContent = isLocal ? 'Locale' : 'Officielle'
+        badge.classList.toggle('is-local', isLocal)
+
+        const root = await appdata()
+        const dataDirectory = process.platform === 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`
+        detail.querySelector('.instance-directory-value').textContent = path.join(
+            root,
+            dataDirectory,
+            'instances',
+            instance.instanceDirectory || instance.name
+        )
+
+        this.setInstanceName(displayName)
+        await this.updateInstanceStatus(instance)
+    }
+
+    async updateInstanceStatus(instance) {
+        const requestId = (this.statusRequestId || 0) + 1
+        this.statusRequestId = requestId
+
+        if (!instance?.status) {
+            this.updateLocalStatus(instance)
+            return
+        }
+
+        document.querySelector('.player-count-label').textContent = 'joueurs'
+        await setStatus(instance.status)
+
+        if (requestId !== this.statusRequestId && this.selectedInstance) {
+            await this.updateInstanceStatus(this.selectedInstance)
+        }
+    }
+
+    updateLocalStatus(instance) {
+        const statusText = document.querySelector('.server-status-text')
+        document.querySelector('.server-status-name').textContent = instance?.displayName || instance?.name || 'Minecraft'
+        document.querySelector('.player-count').textContent = '—'
+        document.querySelector('.player-count-label').textContent = 'local'
+        document.querySelector('.status-player-count').classList.remove('red')
+        statusText.classList.remove('red')
+        statusText.textContent = instance ? 'Instance locale' : 'Aucune instance'
+    }
+
+    openCreateInstance() {
+        const ui = this.instanceUI
+        ui.createForm.reset()
+        ui.versionInput.value = '1.20.1'
+        ui.loaderInput.value = 'none'
+        ui.loaderVersionInput.value = 'latest'
+        ui.loaderVersionInput.disabled = true
+        ui.formError.textContent = ''
+        ui.createPopup.classList.add('is-open')
+        ui.createPopup.setAttribute('aria-hidden', 'false')
+        setTimeout(() => ui.nameInput.focus(), 0)
+    }
+
+    closeCreateInstance() {
+        this.instanceUI.createPopup.classList.remove('is-open')
+        this.instanceUI.createPopup.setAttribute('aria-hidden', 'true')
+        document.querySelector('.instance-create-btn').focus()
+    }
+
+    async createLocalInstance() {
+        const ui = this.instanceUI
+        const submitButton = document.querySelector('.instance-dialog-submit')
+        const displayName = ui.nameInput.value.trim()
+        const minecraftVersion = ui.versionInput.value.trim()
+        const loaderType = ui.loaderInput.value
+        const loaderVersion = ui.loaderVersionInput.value.trim() || 'latest'
+
+        if (displayName.length < 2) {
+            ui.formError.textContent = 'Le nom doit contenir au moins 2 caractères.'
+            ui.nameInput.focus()
+            return
+        }
+        if (!/^[0-9A-Za-z._-]+$/.test(minecraftVersion)) {
+            ui.formError.textContent = 'La version Minecraft contient des caractères non valides.'
+            ui.versionInput.focus()
+            return
+        }
+        if (this.instances.some(instance => (instance.displayName || instance.name).toLowerCase() === displayName.toLowerCase())) {
+            ui.formError.textContent = 'Une instance porte déjà ce nom.'
+            ui.nameInput.focus()
+            return
+        }
+
+        const timestamp = Date.now()
+        const safeName = displayName
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9_-]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .toLowerCase() || 'instance'
+
+        submitButton.disabled = true
+        submitButton.textContent = 'Création…'
+        ui.formError.textContent = ''
+
+        try {
+            const instance = await this.db.createData('localInstances', {
+                name: `local-${timestamp}`,
+                displayName,
+                source: 'local',
+                instanceDirectory: `${safeName}-${timestamp.toString(36)}`,
+                url: null,
+                loadder: {
+                    minecraft_version: minecraftVersion,
+                    loadder_type: loaderType,
+                    loadder_version: loaderType === 'none' ? null : loaderVersion
+                },
+                verify: false,
+                ignored: [],
+                whitelist: [],
+                whitelistActive: false,
+                status: null,
+                createdAt: new Date().toISOString()
+            })
+
+            this.closeCreateInstance()
+            await this.refreshInstances(instance.name)
+        } catch (error) {
+            console.error('[Instances] Unable to create local instance:', error)
+            ui.formError.textContent = 'Création impossible. Vérifiez que le launcher peut écrire sur le disque.'
+        } finally {
+            submitButton.disabled = false
+            submitButton.textContent = 'Créer l’instance'
+        }
+    }
+
+    openDeleteInstance() {
+        const instance = this.selectedInstance
+        if (!instance || instance.source !== 'local') return
+
+        this.pendingDeleteInstance = instance
+        this.instanceUI.deleteCopy.textContent = `« ${instance.displayName || instance.name} » sera retirée de la liste.`
+        this.instanceUI.deletePopup.classList.add('is-open')
+        this.instanceUI.deletePopup.setAttribute('aria-hidden', 'false')
+        setTimeout(() => document.querySelector('.instance-delete-cancel').focus(), 0)
+    }
+
+    closeDeleteInstance() {
+        this.pendingDeleteInstance = null
+        this.instanceUI.deletePopup.classList.remove('is-open')
+        this.instanceUI.deletePopup.setAttribute('aria-hidden', 'true')
+        document.querySelector('.instance-delete-btn').focus()
+    }
+
+    async deleteLocalInstance() {
+        const instance = this.pendingDeleteInstance
+        if (!instance || instance.source !== 'local' || !instance.ID) return
+
+        await this.db.deleteData('localInstances', instance.ID)
+        this.instanceUI.deletePopup.classList.remove('is-open')
+        this.instanceUI.deletePopup.setAttribute('aria-hidden', 'true')
+        this.pendingDeleteInstance = null
+        await this.refreshInstances()
+    }
+
+    getInstanceInitials(name) {
+        return String(name)
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(part => part[0])
+            .join('')
+            .toUpperCase() || 'MC'
+    }
+
+    formatLoader(loader) {
+        const labels = {
+            none: 'Vanilla',
+            forge: 'Forge',
+            neoforge: 'NeoForge',
+            fabric: 'Fabric',
+            legacyfabric: 'Legacy Fabric',
+            quilt: 'Quilt'
+        }
+        return labels[String(loader || 'none').toLowerCase()] || String(loader || 'Vanilla')
+    }
+
+    trapDialogFocus(event, dialog) {
+        const focusable = [...dialog.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )]
+        if (!focusable.length) return
+
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault()
+            last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault()
+            first.focus()
+        }
     }
 
     async startGame() {
         let launch = new Launch()
         let configClient = await this.db.readData('configClient')
-        let instance = await config.getInstanceList()
         let authenticator = await this.db.readData('accounts', configClient.account_selected)
-        let options = instance.find(i => i.name == configClient.instance_selct)
+        let options = this.instances?.find(i => i.name == configClient.instance_selct)
+
+        if (!options) {
+            let popupError = new popup()
+            popupError.openPopup({
+                title: 'Aucune instance',
+                content: 'Sélectionnez ou créez une instance avant de lancer le jeu.',
+                color: 'var(--danger-color)',
+                options: true
+            })
+            return
+        }
 
         let playInstanceBTN = document.querySelector('.play-instance')
         let infoStartingBOX = document.querySelector('.info-starting-game')
@@ -192,21 +505,21 @@ class Home {
             authenticator: authenticator,
             timeout: 10000,
             path: `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}`,
-            instance: options.name,
+            instance: options.instanceDirectory || options.name,
             version: options.loadder.minecraft_version,
             detached: configClient.launcher_config.closeLauncher == "close-all" ? false : true,
             downloadFileMultiple: configClient.launcher_config.download_multi,
             intelEnabledMac: configClient.launcher_config.intelEnabledMac,
 
             loader: {
-                type: options.loadder.loadder_type,
-                build: options.loadder.loadder_version,
+                type: options.loadder.loadder_type == 'none' ? null : options.loadder.loadder_type,
+                build: options.loadder.loadder_version || 'latest',
                 enable: options.loadder.loadder_type == 'none' ? false : true
             },
 
-            verify: options.verify,
+            verify: Boolean(options.verify),
 
-            ignored: [...options.ignored],
+            ignored: [...(options.ignored || [])],
 
             javaPath: configClient.java_config.java_path,
 

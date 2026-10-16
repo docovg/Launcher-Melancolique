@@ -32,9 +32,76 @@
             </div>
             <div class="news-list content-scroll"></div>
         </div>
-        <div class="player-showcase">
-            <div class="player-body"></div>
-        </div>
+        <section class="instance-manager" aria-labelledby="instance-manager-title">
+            <aside class="instance-library">
+                <div class="instance-library-header">
+                    <div>
+                        <div class="instance-library-eyebrow">Bibliothèque</div>
+                        <h2 id="instance-manager-title">Instances</h2>
+                    </div>
+                    <button type="button" class="instance-create-btn" aria-label="Créer une instance locale"
+                        title="Créer une instance locale">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="instance-library-list content-scroll" role="list" aria-label="Liste des instances"></div>
+                <div class="instance-library-footer">
+                    <span class="instance-library-count">0 instance</span>
+                    <span class="instance-library-hint">Locales et officielles</span>
+                </div>
+            </aside>
+
+            <article class="instance-detail" aria-live="polite">
+                <div class="instance-detail-empty">
+                    <div class="instance-empty-mark">M</div>
+                    <h2>Aucune instance</h2>
+                    <p>Crée une instance locale pour commencer.</p>
+                </div>
+
+                <div class="instance-detail-content">
+                    <div class="instance-detail-topline">
+                        <span class="instance-detail-kicker">Instance sélectionnée</span>
+                        <span class="instance-source-badge"></span>
+                    </div>
+                    <h2 class="instance-detail-name"></h2>
+                    <p class="instance-detail-description"></p>
+
+                    <dl class="instance-specs">
+                        <div class="instance-spec">
+                            <dt>Version Minecraft</dt>
+                            <dd class="instance-minecraft-version">—</dd>
+                        </div>
+                        <div class="instance-spec">
+                            <dt>Chargeur</dt>
+                            <dd class="instance-loader-type">—</dd>
+                        </div>
+                        <div class="instance-spec">
+                            <dt>Version du chargeur</dt>
+                            <dd class="instance-loader-version">—</dd>
+                        </div>
+                        <div class="instance-spec">
+                            <dt>Synchronisation</dt>
+                            <dd class="instance-sync-mode">—</dd>
+                        </div>
+                    </dl>
+
+                    <div class="instance-detail-footer">
+                        <div class="instance-directory">
+                            <span class="instance-directory-label">Dossier local</span>
+                            <span class="instance-directory-value"></span>
+                        </div>
+                        <button type="button" class="instance-delete-btn">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"></path>
+                            </svg>
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </article>
+        </section>
     </div>
 
     <div class="sidebar">
@@ -51,7 +118,6 @@
                     <span class="play-btn-text">Jouer</span>
                     <span class="play-instance-name"></span>
                 </button>
-                <div class="instance-select icon-arrow" title="Choisir une instance"></div>
             </div>
             <div class="info-starting-game">
                 <div class="info-starting-game-text">Connexion...</div>
@@ -64,11 +130,63 @@
         </div>
     </div>
 
-    <div class="instance-popup">
-        <div class="instances-tab">
-            <div class="close-popup icon-close"></div>
-            <p>Choisissez votre instance</p>
-            <div class="instances-List"></div>
+    <div class="instance-create-popup" aria-hidden="true">
+        <form class="instance-create-dialog" role="dialog" aria-modal="true" aria-labelledby="instance-create-title">
+            <button type="button" class="instance-dialog-close icon-close" aria-label="Fermer"></button>
+            <div class="instance-dialog-kicker">Nouvelle configuration</div>
+            <h2 id="instance-create-title">Créer une instance locale</h2>
+            <p class="instance-dialog-intro">Elle sera enregistrée uniquement sur cet ordinateur.</p>
+
+            <label class="instance-field">
+                <span>Nom de l’instance</span>
+                <input id="local-instance-name" class="instance-name-input" type="text" maxlength="40"
+                    autocomplete="off" placeholder="Mon aventure" aria-describedby="instance-form-error" required>
+            </label>
+
+            <div class="instance-form-row">
+                <label class="instance-field">
+                    <span>Version Minecraft</span>
+                    <input id="local-instance-version" class="instance-version-input" type="text" value="1.20.1"
+                        maxlength="24" autocomplete="off" aria-describedby="instance-form-error" required>
+                </label>
+                <label class="instance-field">
+                    <span>Chargeur</span>
+                    <select class="instance-loader-input">
+                        <option value="none">Vanilla</option>
+                        <option value="forge">Forge</option>
+                        <option value="neoforge">NeoForge</option>
+                        <option value="fabric">Fabric</option>
+                        <option value="quilt">Quilt</option>
+                        <option value="legacyfabric">Legacy Fabric</option>
+                    </select>
+                </label>
+            </div>
+
+            <label class="instance-field instance-loader-version-field">
+                <span>Version du chargeur</span>
+                <input class="instance-loader-version-input" type="text" value="latest" maxlength="32"
+                    autocomplete="off" disabled>
+                <small>Utilise « latest » pour laisser le launcher choisir.</small>
+            </label>
+
+            <div id="instance-form-error" class="instance-form-error" role="alert"></div>
+            <div class="instance-dialog-actions">
+                <button type="button" class="instance-dialog-cancel">Annuler</button>
+                <button type="submit" class="instance-dialog-submit">Créer l’instance</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="instance-delete-popup" aria-hidden="true">
+        <div class="instance-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="instance-delete-title">
+            <div class="instance-dialog-kicker">Instance locale</div>
+            <h2 id="instance-delete-title">Supprimer cette instance ?</h2>
+            <p class="instance-delete-copy"></p>
+            <p class="instance-delete-note">La configuration sera retirée du launcher. Le dossier de jeu reste conservé sur le disque.</p>
+            <div class="instance-dialog-actions">
+                <button type="button" class="instance-delete-cancel">Annuler</button>
+                <button type="button" class="instance-delete-confirm">Supprimer</button>
+            </div>
         </div>
     </div>
 </div>

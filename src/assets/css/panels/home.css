@@ -10,6 +10,7 @@
 
 .status-server,
 .new-tab,
+.instance-manager,
 .sidebar {
     background: var(--background-transparent);
     border: 1px solid var(--frame-color);
@@ -19,7 +20,6 @@
 
 /* Emplacement "objet" façon RPG : cuir sombre cerclé de bronze */
 .social-block,
-.instance-select,
 .settings-btn {
     display: flex;
     align-items: center;
@@ -35,7 +35,6 @@
 }
 
 .social-block:hover,
-.instance-select:hover,
 .settings-btn:hover {
     border-color: var(--gold);
     color: var(--parchment);
@@ -316,32 +315,437 @@
 
 /*******************************************************************************
  *                                                                             *
- * player showcase                                                             *
+ * Instance manager                                                            *
  *                                                                             *
  ******************************************************************************/
 
-.player-showcase {
-    position: relative;
+.instance-manager {
+    display: grid;
+    grid-template-columns: minmax(190px, 29%) minmax(0, 1fr);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+}
+
+.instance-library {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-right: 1px solid var(--frame-color);
+    background: linear-gradient(180deg, rgba(216, 166, 87, 0.055), transparent 32%);
+}
+
+.instance-library-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: none;
+    padding: 17px 16px 14px;
+    border-bottom: 1px solid var(--frame-color);
+}
+
+.instance-library-eyebrow,
+.instance-detail-kicker,
+.instance-dialog-kicker {
+    margin-bottom: 3px;
+    color: var(--gold-text);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.instance-library-header h2,
+.instance-detail h2,
+.instance-create-dialog h2,
+.instance-delete-dialog h2 {
+    margin: 0;
+    color: var(--title-color);
+    font-family: var(--font-title);
+}
+
+.instance-library-header h2 {
+    font-size: 1.12rem;
+}
+
+.instance-create-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--bronze);
+    border-radius: 10px;
+    background: var(--leather);
+    color: var(--gold);
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(255, 214, 150, 0.1);
+    transition: border-color 0.2s, color 0.2s, transform 0.2s var(--ease), box-shadow 0.2s;
+}
+
+.instance-create-btn svg,
+.instance-delete-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.instance-create-btn:hover {
+    border-color: var(--gold);
+    color: var(--parchment);
+    box-shadow: 0 0 14px var(--ember-glow);
+    transform: translateY(-1px);
+}
+
+.instance-create-btn:active {
+    transform: scale(0.96);
+}
+
+.instance-library-list {
     display: flex;
     flex: 1;
-    align-items: flex-end;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 0;
+    padding: 10px;
+}
+
+.instance-list-empty {
+    margin: auto 10px;
+    color: var(--color-muted);
+    font-size: 0.76rem;
+    font-weight: 400;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.instance-list-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 58px;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.18s var(--ease), box-shadow 0.18s;
+}
+
+.instance-list-item:hover {
+    border-color: var(--frame-color);
+    background: var(--background-element-hover);
+    transform: translateX(2px);
+}
+
+.instance-list-item:active {
+    transform: translateX(2px) scale(0.985);
+}
+
+.instance-list-item.is-active {
+    border-color: rgba(216, 166, 87, 0.55);
+    background: linear-gradient(90deg, rgba(232, 50, 28, 0.19), rgba(216, 166, 87, 0.06));
+    box-shadow: inset 3px 0 0 var(--gold), 0 7px 16px rgba(0, 0, 0, 0.18);
+}
+
+.instance-list-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    box-sizing: border-box;
+    border: 1px solid var(--bronze);
+    border-radius: 8px;
+    background: radial-gradient(circle at 35% 25%, rgba(232, 50, 28, 0.45), rgba(23, 11, 7, 0.92) 68%);
+    color: var(--parchment);
+    font-family: var(--font-title);
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    box-shadow: inset 0 0 0 1px rgba(255, 214, 150, 0.08);
+}
+
+.instance-list-item.is-local .instance-list-icon {
+    background: radial-gradient(circle at 35% 25%, rgba(216, 166, 87, 0.38), rgba(23, 11, 7, 0.92) 68%);
+}
+
+.instance-list-copy {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
     pointer-events: none;
 }
 
-.player-body {
-    width: 320px;
-    height: min(100%, 440px);
-    pointer-events: all;
+.instance-list-name {
+    overflow: hidden;
+    color: var(--color);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.player-body iframe {
-    display: block;
-    width: 100%;
+.instance-list-meta {
+    overflow: hidden;
+    color: var(--color-muted);
+    font-size: 0.61rem;
+    font-weight: 400;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.instance-library-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex: none;
+    padding: 10px 14px;
+    border-top: 1px solid var(--frame-color);
+    color: var(--color-muted);
+    font-size: 0.58rem;
+    font-weight: 400;
+}
+
+.instance-library-count {
+    color: var(--gold-text);
+    font-weight: 700;
+}
+
+.instance-detail {
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 85% 16%, rgba(232, 50, 28, 0.16), transparent 34%),
+        linear-gradient(135deg, rgba(216, 166, 87, 0.035), transparent 52%);
+}
+
+.instance-detail::after {
+    content: 'M';
+    position: absolute;
+    right: 20px;
+    bottom: -62px;
+    color: rgba(216, 166, 87, 0.035);
+    font-family: var(--font-title);
+    font-size: 15rem;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.instance-detail-empty,
+.instance-detail-content {
+    position: relative;
+    z-index: 1;
     height: 100%;
-    border: none;
-    background: transparent;
+    box-sizing: border-box;
+}
+
+.instance-detail-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 28px;
+    color: var(--color-muted);
+    text-align: center;
+}
+
+.instance-detail-empty h2 {
+    margin: 14px 0 4px;
+    font-size: 1.15rem;
+}
+
+.instance-detail-empty p {
+    margin: 0;
+    font-size: 0.76rem;
+    font-weight: 400;
+}
+
+.instance-empty-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 62px;
+    border: 1px solid var(--bronze);
+    border-radius: 14px;
+    background: var(--leather);
+    color: var(--gold);
+    font-family: var(--font-title);
+    font-size: 1.65rem;
+    box-shadow: 0 0 22px rgba(216, 166, 87, 0.12);
+}
+
+.instance-detail-content {
+    display: none;
+    flex-direction: column;
+    padding: clamp(18px, 2.2vw, 28px);
+}
+
+.instance-detail.has-instance .instance-detail-empty {
+    display: none;
+}
+
+.instance-detail.has-instance .instance-detail-content {
+    display: flex;
+}
+
+.instance-detail-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.instance-source-badge {
+    padding: 4px 9px;
+    border: 1px solid rgba(216, 166, 87, 0.42);
+    border-radius: 999px;
+    background: rgba(216, 166, 87, 0.09);
+    color: var(--gold-text);
+    font-size: 0.57rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.instance-source-badge.is-local {
+    border-color: rgba(63, 209, 122, 0.42);
+    background: rgba(63, 209, 122, 0.09);
+    color: var(--success-color);
+}
+
+.instance-detail-name {
+    max-width: 90%;
+    margin: 8px 0 4px !important;
+    overflow: hidden;
+    font-size: clamp(1.35rem, 2.2vw, 2rem);
+    line-height: 1.12;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.instance-detail-description {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 400;
+}
+
+.instance-specs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin: 20px 0 16px;
+}
+
+.instance-spec {
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--background-element);
+}
+
+.instance-spec dt {
+    margin-bottom: 3px;
+    color: var(--color-muted);
+    font-size: 0.55rem;
+    font-weight: 400;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.instance-spec dd {
+    margin: 0;
+    overflow: hidden;
+    color: var(--color);
+    font-size: 0.77rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.instance-detail-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--frame-color);
+}
+
+.instance-directory {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.instance-directory-label {
+    color: var(--color-muted);
+    font-size: 0.55rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.instance-directory-value {
+    max-width: 330px;
+    overflow: hidden;
+    color: var(--color);
+    font-family: Consolas, monospace;
+    font-size: 0.62rem;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.instance-delete-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex: none;
+    min-height: 44px;
+    padding: 0 13px;
+    border: 1px solid rgba(255, 75, 75, 0.45);
+    border-radius: 9px;
+    background: rgba(255, 75, 75, 0.08);
+    color: var(--danger-color);
+    font-family: inherit;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.instance-detail.is-local .instance-delete-btn {
+    display: flex;
+}
+
+.instance-delete-btn:hover {
+    border-color: var(--danger-color);
+    background: rgba(255, 75, 75, 0.16);
+}
+
+.instance-delete-btn:active {
+    transform: scale(0.97);
 }
 
 /*******************************************************************************
@@ -449,11 +853,10 @@
     transform: translateY(0) scale(0.985);
 }
 
-/* Survoler la flèche ne doit pas allumer le bouton Jouer */
-.play-instance:has(.instance-select:hover) {
-    border-image-source: url('../../images/ui/play-button.png');
-    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
-    transform: none;
+.play-instance.is-disabled {
+    pointer-events: none;
+    filter: grayscale(0.75) brightness(0.65);
+    opacity: 0.62;
 }
 
 .play-btn {
@@ -496,22 +899,6 @@
 
 .play-instance-name:empty {
     display: none;
-}
-
-/* Sélecteur d'instance, posé à droite du cadre */
-.instance-select {
-    position: absolute;
-    top: 50%;
-    left: calc(100% + 30px + 12px);
-    width: 50px;
-    height: 50px;
-    font-size: 0.9rem;
-    transform: translateY(-50%);
-}
-
-.instance-select:before {
-    transform: rotate(270deg);
-    pointer-events: none;
 }
 
 .info-starting-game {
@@ -569,153 +956,272 @@
 
 /*******************************************************************************
  *                                                                             *
- * instance popup                                                              *
+ * Instance dialogs                                                            *
  *                                                                             *
  ******************************************************************************/
 
-.instance-popup {
+.instance-create-popup,
+.instance-delete-popup {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
+    z-index: 20;
     display: none;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(6px);
-    z-index: 10;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
-}
-
-.instances-tab {
-    position: relative;
-    max-width: calc(100% - 80px);
-    max-height: calc(100% - 120px);
+    padding: 28px;
     box-sizing: border-box;
-    overflow: auto;
-    padding: 28px 32px 32px;
-    border-radius: 22px;
-    background: var(--background);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(8px);
+}
+
+.instance-create-popup.is-open,
+.instance-delete-popup.is-open {
+    display: flex;
+}
+
+.instance-create-dialog,
+.instance-delete-dialog {
+    position: relative;
+    width: min(520px, 100%);
+    box-sizing: border-box;
+    padding: 28px;
     border: 1px solid var(--frame-color);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 160, 0.06);
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 90% 0, rgba(232, 50, 28, 0.14), transparent 36%),
+        var(--background);
+    color: var(--color);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 220, 160, 0.06);
 }
 
-.instances-tab::-webkit-scrollbar {
-    width: 0;
+.instance-delete-dialog {
+    width: min(440px, 100%);
 }
 
-.instances-tab p {
-    margin: 0 0 20px;
-    font-family: var(--font-title);
-    font-size: 1.3rem;
-    color: var(--title-color);
-}
-
-.close-popup {
+.instance-dialog-close {
     position: absolute;
     top: 16px;
     right: 16px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--background-element);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.close-popup:hover {
-    background: var(--element-color);
-    color: #fff;
-}
-
-.instances-List {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 16px;
-}
-
-/* Carte d'instance avec bannière intégrée */
-.instance-elements {
-    position: relative;
-    width: 220px;
-    box-sizing: border-box;
-    padding: 122px 10px 14px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--border-color);
     border-radius: 10px;
-    overflow: hidden;
     background: var(--background-element);
-    border: 2px solid var(--frame-color);
-    font-size: 1rem;
-    text-align: center;
-    overflow-wrap: anywhere;
+    color: var(--color-muted);
     cursor: pointer;
-    transition: transform 0.25s var(--ease), border-color 0.2s, box-shadow 0.25s;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.instance-elements:hover {
-    transform: translateY(-4px);
+.instance-dialog-close:hover {
     border-color: var(--bronze);
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+    background: var(--background-element-hover);
+    color: var(--color);
 }
 
-/* Pseudo-élément pour la bannière */
-.instance-elements::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
+.instance-create-dialog h2,
+.instance-delete-dialog h2 {
+    padding-right: 48px;
+    font-size: 1.35rem;
+}
+
+.instance-dialog-intro,
+.instance-delete-copy,
+.instance-delete-note {
+    color: var(--color-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.55;
+}
+
+.instance-dialog-intro {
+    margin: 5px 0 20px;
+}
+
+.instance-delete-copy {
+    margin: 12px 0 6px;
+    color: var(--color);
+}
+
+.instance-delete-note {
+    margin: 0 0 22px;
+}
+
+.instance-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.instance-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 14px;
+}
+
+.instance-field > span {
+    color: var(--color);
+    font-size: 0.67rem;
+}
+
+.instance-field input,
+.instance-field select {
     width: 100%;
-    height: 110px;
-    background-color: #2a1512;
-    background-image: linear-gradient(135deg, var(--element-color-deep), #1a1010);
-    background-size: cover;
-    background-position: center;
-    border-bottom: 1px solid var(--frame-color);
-    pointer-events: none;
+    height: 44px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    outline: none;
+    background: var(--background-element);
+    color: var(--color);
+    font-family: inherit;
+    font-size: 0.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
-/* Définition des bannières par instance */
-/* Note : Échappez le point pour l'ID "1.8.9" */
-[id="1.8.9"]::before {
-    background-image: url('https://staticg.sportskeeda.com/editor/2025/01/8827f-17376979472538-1920.jpg?w=640');
+.instance-field select option {
+    background: var(--background);
+    color: var(--color);
 }
 
-[id="UHC"]::before {
-    background-image: url('https://staticg.sportskeeda.com/editor/2025/01/8827f-17376979472538-1920.jpg?w=640');
-}
-
-#launchermelancolique::before {
-    background-image: url('https://i.pinimg.com/originals/2d/82/d9/2d82d901304ed14d0ea5d44c6d12dbac.gif');
-}
-
-#pokemon::before {
-    background-image: url('https://godlike.host/wp-content/uploads/2024/12/2-7.jpg.webp');
-}
-
-/* Mise en avant de l'instance sélectionnée */
-.instance-elements.active-instance {
+.instance-field input:focus,
+.instance-field select:focus {
     border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(216, 166, 87, 0.2), 0 0 18px var(--ember-glow);
+    background: var(--background-element-hover);
+    box-shadow: 0 0 0 3px rgba(216, 166, 87, 0.14);
 }
 
-.instance-elements.active-instance::after {
-    content: "Sélectionnée";
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--gold);
-    background: rgba(23, 11, 7, 0.85);
-    color: var(--gold);
-    font-size: 0.6rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    pointer-events: none;
+.instance-field input:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+}
+
+.instance-field small {
+    color: var(--color-muted);
+    font-size: 0.58rem;
+    font-weight: 400;
+}
+
+.instance-form-error {
+    min-height: 18px;
+    margin: -2px 0 8px;
+    color: var(--danger-color);
+    font-size: 0.66rem;
+    font-weight: 400;
+}
+
+.instance-dialog-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.instance-dialog-actions button {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.instance-dialog-cancel,
+.instance-delete-cancel {
+    border: 1px solid var(--border-color);
+    background: var(--background-element);
+    color: var(--color);
+}
+
+.instance-dialog-submit {
+    border: 1px solid var(--bronze);
+    background: linear-gradient(180deg, var(--element-color), var(--element-color-deep));
+    color: #fff;
+    box-shadow: 0 7px 18px rgba(156, 26, 12, 0.3);
+}
+
+.instance-delete-confirm {
+    border: 1px solid var(--danger-color);
+    background: rgba(255, 75, 75, 0.14);
+    color: var(--danger-color);
+}
+
+.instance-dialog-actions button:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(216, 166, 87, 0.12);
+}
+
+.instance-delete-confirm:hover {
+    border-color: var(--danger-color) !important;
+    background: rgba(255, 75, 75, 0.24);
+    box-shadow: 0 0 12px rgba(255, 75, 75, 0.12) !important;
+}
+
+.instance-dialog-actions button:active {
+    transform: scale(0.97);
+}
+
+.instance-dialog-actions button:disabled {
+    cursor: wait;
+    opacity: 0.48;
+    transform: none;
+}
+
+.instance-create-btn:focus-visible,
+.instance-list-item:focus-visible,
+.instance-delete-btn:focus-visible,
+.instance-dialog-close:focus-visible,
+.instance-dialog-actions button:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+@media (max-width: 1050px) {
+    .home-bottom {
+        gap: 16px;
+    }
+
+    .new-tab {
+        width: 300px;
+    }
+
+    .instance-manager {
+        grid-template-columns: 180px minmax(0, 1fr);
+    }
+
+    .instance-library-hint,
+    .instance-directory {
+        display: none;
+    }
+}
+
+@media (max-height: 680px) {
+    .home .container {
+        padding-top: 26px;
+        gap: 14px;
+    }
+
+    .instance-specs {
+        margin: 12px 0 10px;
+    }
+
+    .instance-detail-content {
+        padding-top: 16px;
+        padding-bottom: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .instance-create-btn,
+    .instance-list-item,
+    .instance-delete-btn,
+    .instance-dialog-actions button {
+        transition: none;
+    }
 }

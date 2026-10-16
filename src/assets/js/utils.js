@@ -91,7 +91,7 @@ function playerProfile(name) {
     // Personnage 3D du compte sélectionné
     const profileUrl = `https://azuriom.abdelnaim.fr/skin3d/3d-api/premium/${encodeURIComponent(name)}`;
     const playerBody = document.querySelector(".player-body");
-    playerBody.innerHTML = `<iframe id="iframeCode" src="${profileUrl}"></iframe>`;
+    if (playerBody) playerBody.innerHTML = `<iframe id="iframeCode" src="${profileUrl}"></iframe>`;
 }
 
 async function setStatus(opt) {

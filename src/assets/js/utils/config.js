@@ -25,13 +25,21 @@ class Config {
 
     async getInstanceList() {
         let urlInstance = `${url}/files/`
-        let instances = await nodeFetch(urlInstance).then(res => res.json()).catch(err => err)
+        let instances = await nodeFetch(urlInstance).then(async res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            return await res.json()
+        }).catch(error => {
+            console.error('[Instances] Unable to load remote instances:', error)
+            return {}
+        })
         let instancesList = []
         instances = Object.entries(instances)
 
         for (let [name, data] of instances) {
-            let instance = data
+            let instance = { ...data }
+            instance.displayName = data.name || name
             instance.name = name
+            instance.source = 'remote'
             instancesList.push(instance)
         }
         return instancesList
