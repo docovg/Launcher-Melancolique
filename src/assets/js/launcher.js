@@ -94,8 +94,8 @@ class Launcher {
                 java_config: {
                     java_path: null,
                     java_memory: {
-                        min: 2,
-                        max: 4
+                        min: 4,
+                        max: 10
                     }
                 },
                 game_config: {

@@ -1,0 +1,3 @@
+DirectoryIndex index.html
+RewriteEngine On
+RewriteRule ^files$ /files/ [R=302,L]

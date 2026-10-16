@@ -1,7 +1,7 @@
 {
   "name": "launcher-melancolique",
   "productName": "Launcher Melancolique",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Launcher moddé pour la survie",
   "main": "src/app.js",
   "author": {
