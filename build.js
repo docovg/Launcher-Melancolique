@@ -6,7 +6,7 @@ const nodeFetch = require('node-fetch')
 const png2icons = require('png2icons');
 const Jimp = require('jimp');
 
-const { preductname } = require('./package.json');
+const { productName, build: packageBuild } = require('./package.json');
 
 class Index {
     async init() {
@@ -63,8 +63,8 @@ class Index {
         builder.build({
             config: {
                 generateUpdatesFilesForAllChannels: false,
-                appId: preductname,
-                productName: preductname,
+                appId: packageBuild.appId,
+                productName,
                 copyright: 'Copyright © 2020-2024 Atmoz',
                 artifactName: "${productName}-${os}-${arch}.${ext}",
                 extraMetadata: { main: 'app/app.js' },
@@ -120,7 +120,6 @@ class Index {
     getFiles(path, file = []) {
         if (fs.existsSync(path)) {
             let files = fs.readdirSync(path);
-            if (files.length == 0) file.push(path);
             for (let i in files) {
                 let name = `${path}/${files[i]}`;
                 if (fs.statSync(name).isDirectory()) this.getFiles(name, file);

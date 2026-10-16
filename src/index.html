@@ -5,12 +5,18 @@
         <link rel="stylesheet" href="assets/css/index.css">
     </head>
     <body>
+        <div class="splash-frame"></div>
         <div id="splash" style="display:none">
             <img class="splash" src="assets/images/icon.png" />
-            <p class="splash-message"></p>
-            <p class="splash-author"><span class="author"></span></p>
-            <p class="message">Recherche de mise à jour...</p>
-            <progress value="0" max="0" class="progress"></progress>
+            <div class="splash-texts">
+                <p class="splash-title">Mélancolique</p>
+                <p class="splash-message"></p>
+                <p class="splash-author"><span class="author"></span></p>
+                <div class="splash-divider"></div>
+                <p class="message">Recherche de mise à jour...</p>
+                <progress value="0" max="0" class="progress"></progress>
+            </div>
+            <p class="splash-version"></p>
         </div>
         <script src="assets/js/index.js" type="module"></script>
     </body>

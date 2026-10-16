@@ -1,10 +1,27 @@
 @import "font.css";
 @import 'theme.css';
 
+/* L'écran de chargement est toujours posé sur l'illustration assombrie,
+   les textes gardent donc des couleurs claires dans les deux thèmes. */
 body {
-    background-color: var(--background);
+    margin: 0;
+    overflow: hidden;
+    background-color: #0d0806;
+    background-size: cover;
+    background-position: center;
     font-family: "Poppins";
     letter-spacing: 0px;
+    color: var(--parchment);
+    user-select: none;
+    -webkit-app-region: drag;
+}
+
+body:before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(13, 8, 6, 0.55) 0%, rgba(13, 8, 6, 0.92) 75%);
+    pointer-events: none;
 }
 
 img {
@@ -12,36 +29,126 @@ img {
     user-select: none;
 }
 
+p {
+    margin: 0;
+}
+
+/* Cadre décoratif en bronze */
+.splash-frame {
+    position: fixed;
+    inset: 10px;
+    border: 1px solid rgba(216, 166, 87, 0.3);
+    border-radius: 6px;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+}
+
+.splash-frame:before,
+.splash-frame:after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 5px);
+    width: 8px;
+    height: 8px;
+    background: var(--gold);
+    box-shadow: 0 0 8px rgba(216, 166, 87, 0.6);
+    transform: rotate(45deg);
+}
+
+.splash-frame:before {
+    top: -5px;
+}
+
+.splash-frame:after {
+    bottom: -5px;
+}
+
+/*******************************************************************************
+ *                                                                             *
+ * Logo                                                                        *
+ *                                                                             *
+ ******************************************************************************/
+
 .splash {
     position: absolute;
-    top: 180px;
+    top: 192px;
     left: 50%;
     transform: translate(-50%);
-    width: 140px;
-    height: 140px;
-    transition: opacity .3s, top 1.5s;
+    width: 116px;
+    height: 116px;
+    box-sizing: border-box;
+    border: 3px solid var(--bronze);
+    border-radius: 16px;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 0 0 6px rgba(216, 166, 87, 0.12), 0 0 22px var(--ember-glow);
+    transition: opacity .3s, top 1.5s var(--ease);
     opacity: 0;
 }
 
 .splash.opacity {
     opacity: 1;
+    animation: ember-pulse 2.6s ease-in-out infinite;
 }
 
 .splash.translate {
-    top: 129px;
+    top: 84px;
+}
+
+@keyframes ember-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 0 0 6px rgba(216, 166, 87, 0.12), 0 0 18px rgba(255, 106, 43, 0.25);
+    }
+    50% {
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 0 0 6px rgba(216, 166, 87, 0.2), 0 0 36px rgba(255, 106, 43, 0.6);
+    }
+}
+
+/*******************************************************************************
+ *                                                                             *
+ * Textes                                                                      *
+ *                                                                             *
+ ******************************************************************************/
+
+.splash-texts {
+    position: absolute;
+    top: 222px;
+    left: 30px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.splash-title {
+    font: normal normal bold 26px/32px Cinzel;
+    letter-spacing: 0.08em;
+    color: var(--parchment);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8), 0 0 18px rgba(255, 140, 60, 0.25);
+    transition: opacity 1.5s;
+    opacity: 0;
+}
+
+.splash.translate ~ .splash-texts .splash-title {
+    opacity: 1;
 }
 
 .splash-message {
-    position: absolute;
-    top: 289px;
-    left: 0px;
-    width: 400px;
-    font: normal normal bold 19px/29px Poppins;
-    text-align: center;
-    letter-spacing: 0px;
+    margin-top: 10px;
+    font: normal normal normal 15px/21px Poppins;
+    color: rgba(242, 227, 198, 0.85);
     transition: opacity 1.5s;
-    color: var(--color);
     opacity: 0;
+}
+
+.splash-message:before {
+    content: '«\00a0';
+    color: var(--gold);
+}
+
+.splash-message:after {
+    content: '\00a0»';
+    color: var(--gold);
 }
 
 .splash-message.opacity {
@@ -49,81 +156,122 @@ img {
 }
 
 .splash-author {
-    position: absolute;
-    top: 326px;
-    left: 0px;
-    width: 400px;
-    text-align: center;
+    margin-top: 4px;
+    font: normal normal normal 11px/15px Poppins;
+    color: rgba(242, 227, 198, 0.55);
     transition: opacity 1.5s;
-    font: normal normal normal 9px/13px Poppins;
-    color: var(--color);
     opacity: 0;
 }
 
 .splash-author .author {
-    font: normal normal bold 9px/13px Poppins;
+    font-weight: bold;
+    color: var(--gold);
 }
 
 .splash-author.opacity {
     opacity: 1;
 }
 
-.message {
-    position: absolute;
-    top: 347px;
-    left: 0px;
-    width: 400px;
-    text-align: center;
+/* Ornement : ligne dorée avec un losange au centre */
+.splash-divider {
+    position: relative;
+    width: 180px;
+    height: 1px;
+    margin-top: 20px;
+    background: linear-gradient(90deg, transparent, rgba(216, 166, 87, 0.7), transparent);
     transition: opacity 1.5s;
-    font: normal normal bold 18px/27px Poppins;
-    color: var(--color);
     opacity: 0;
 }
 
-.download-update {
+.splash-divider:after {
+    content: '';
     position: absolute;
-    left: 25%;
-    margin-top: 20px;
-    width: 200px;
-    font: normal normal bold 22px / 45px Poppins;
-    color: var(--color);
-    border: 2px solid var(--color);
-    border-radius: 15px;
-    transition: background-color .2s, color .2s;
+    top: -3px;
+    left: calc(50% - 3.5px);
+    width: 7px;
+    height: 7px;
+    background: var(--gold);
+    transform: rotate(45deg);
 }
 
-.download-update:hover {
-    background-color: var(--color);
-    color: var(--background);
-    cursor: pointer;
+.splash.translate ~ .splash-texts .splash-divider {
+    opacity: 1;
+}
+
+.message {
+    margin-top: 18px;
+    font: normal normal bold 14px/21px Poppins;
+    color: var(--parchment);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+    transition: opacity 1.5s;
+    opacity: 0;
 }
 
 .message.opacity {
     opacity: 1;
 }
 
+.download-update {
+    width: 190px;
+    margin: 14px auto 0;
+    box-sizing: border-box;
+    border-style: solid;
+    border-width: 0 19px;
+    border-image: url('../images/ui/play-button.png') 0 40 fill / 0 19px stretch;
+    font: normal normal bold 16px/42px Cinzel;
+    letter-spacing: 0.06em;
+    color: var(--parchment);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 140, 60, 0.35);
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: filter .2s;
+}
+
+.download-update:hover {
+    border-image-source: url('../images/ui/play-button-hover.png');
+    filter: brightness(1.12) drop-shadow(0 0 8px var(--ember-glow));
+}
+
+/*******************************************************************************
+ *                                                                             *
+ * Progression                                                                 *
+ *                                                                             *
+ ******************************************************************************/
+
 .progress {
-    position: absolute;
-    top: 410px;
-    left: 106px;
-    width: 189px;
+    width: 240px;
     height: 10px;
+    margin-top: 16px;
     appearance: none;
     transition: opacity .2s;
     opacity: 0;
 }
 
-.show {
+.progress.show {
     opacity: 1;
 }
 
 .progress::-webkit-progress-bar {
-    background-color: var(--background);
-    border: solid 1px var(--element-color);
-    border-radius: 10px;
+    background: #120806;
+    border: 1px solid var(--bronze);
+    border-radius: 999px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .progress::-webkit-progress-value {
-    background-color: var(--element-color);
-    border-radius: 10px;
+    background: linear-gradient(90deg, #7a1608, var(--element-color) 60%, var(--ember));
+    border-radius: 999px;
+    box-shadow: 0 0 12px var(--ember-glow);
+    transition: width .2s;
+}
+
+.splash-version {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font: normal normal normal 10px/14px Poppins;
+    letter-spacing: 0.1em;
+    color: rgba(242, 227, 198, 0.4);
 }

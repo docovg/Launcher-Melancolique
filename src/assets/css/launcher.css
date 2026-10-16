@@ -83,14 +83,14 @@ input::-webkit-inner-spin-button {
     color: #f8f9f9;
 }
 
-.icon-close:hover {
+.button-frame.icon-close:hover {
     background: #e21212;
 }
 
-.icon-minimize:hover,
-.icon-restore-down:hover,
-.icon-maximize:hover {
-    background-color: #0000009d;
+.button-frame.icon-minimize:hover,
+.button-frame.icon-restore-down:hover,
+.button-frame.icon-maximize:hover {
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 .popup {
@@ -102,44 +102,83 @@ input::-webkit-inner-spin-button {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    backdrop-filter: blur(4px);
 }
 
 .popup-tab {
-    width: 40%;
-    padding: 15px;
+    width: min(440px, calc(100% - 48px));
+    box-sizing: border-box;
+    padding: 26px 28px;
     background: var(--background);
-    border-radius: 15px;
+    border: 1px solid var(--frame-color);
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    text-align: center;
     z-index: 10;
 }
 
 .popup-title {
-    text-align: center;
-    font-size: 2rem;
-    border-bottom: solid 4px var(--color);
-    margin-bottom: 1rem;
+    font-family: var(--font-title);
+    font-size: 1.35rem;
+    color: var(--title-color);
+    margin-bottom: 10px;
+}
+
+.popup-content {
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .popup-options {
     display: none;
-    align-items: end;
     flex-direction: column;
+    margin-top: 20px;
 }
 
 .popup-button {
+    width: 100%;
+    padding: 10px 20px;
+    font-size: 1rem;
+}
+
+/* Bouton "RPG" : cadre en bronze et cuir rouge, découpé en 9 parties pour garder les coins nets */
+.popup-button,
+.connect,
+.java-path-set {
+    border-style: solid;
+    border-width: 0 19px;
+    border-image: url('../images/ui/play-button.png') 0 40 fill / 0 19px stretch;
+    border-radius: 0;
     background: none;
-    color: var(--color);
-    border: solid 4px var(--element-color);
-    border-radius: 10px;
-    padding: 0.3rem 4rem;
-    font-size: inherit;
-    font-weight: bold;
-    margin: 15px 10px;
+    color: var(--parchment);
+    font-family: var(--font-title);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 140, 60, 0.35);
+    cursor: pointer;
+    transition: filter 0.2s, transform 0.2s var(--ease);
+}
+
+.popup-button:hover,
+.connect:hover,
+.java-path-set:hover {
+    border-image-source: url('../images/ui/play-button-hover.png');
+    filter: brightness(1.12) drop-shadow(0 0 8px var(--ember-glow));
+}
+
+.popup-button:active,
+.connect:active,
+.java-path-set:active {
+    transform: scale(0.98);
 }
 
 .panel {
     position: absolute;
     width: 100%;
     height: 100%;
+    overflow: hidden;
     opacity: 0;
     z-index: 0;
     pointer-events: none;

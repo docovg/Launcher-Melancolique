@@ -3,7 +3,7 @@
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0
  */
 
-import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground } from '../utils.js'
+import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground, pkg } from '../utils.js'
 const { ipcRenderer } = require('electron');
 const os = require('os');
 
@@ -21,6 +21,8 @@ class Settings {
     }
 
     navBTN() {
+        document.querySelector('.nav-version').textContent = `v${pkg.version}`
+
         document.querySelector('.nav-box').addEventListener('click', e => {
             if (e.target.classList.contains('nav-settings-btn')) {
                 let id = e.target.id
@@ -114,6 +116,7 @@ class Settings {
                     if (instance.name == instanceSelect) {
                         let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
                         configClient.instance_selct = newInstanceSelect.name
+                        document.querySelector('.play-instance-name').textContent = newInstanceSelect.name
                         await setStatus(newInstanceSelect.status)
                     }
                 }

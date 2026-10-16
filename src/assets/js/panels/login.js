@@ -6,6 +6,7 @@ const { AZauth, Mojang } = require('minecraft-java-core');
 const { ipcRenderer } = require('electron');
 
 import { popup, database, changePanel, accountSelect, addAccount, config, setStatus } from '../utils.js';
+import { normalizeMicrosoftAccount } from '../utils/auth.js';
 
 class Login {
     static id = "login";
@@ -192,6 +193,7 @@ class Login {
     }
 
     async saveData(connectionData) {
+        connectionData = normalizeMicrosoftAccount(connectionData);
         let configClient = await this.db.readData('configClient');
         let account = await this.db.createData('accounts', connectionData)
         let instanceSelect = configClient.instance_selct

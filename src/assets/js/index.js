@@ -6,7 +6,7 @@
 const { ipcRenderer, shell } = require('electron');
 const pkg = require('../package.json');
 const os = require('os');
-import { config, database } from './utils.js';
+import { config, database, setBackground } from './utils.js';
 const nodeFetch = require("node-fetch");
 
 
@@ -22,7 +22,8 @@ class Splash {
             let configClient = await databaseLauncher.readData('configClient');
             let theme = configClient?.launcher_config?.theme || "auto"
             let isDarkTheme = await ipcRenderer.invoke('is-dark-theme', theme).then(res => res)
-            document.body.className = isDarkTheme ? 'dark global' : 'light global';
+            await setBackground(isDarkTheme);
+            document.querySelector('.splash-version').textContent = `v${pkg.version}`;
             if (process.platform == 'win32') ipcRenderer.send('update-window-progress-load')
             this.startAnimation()
         });

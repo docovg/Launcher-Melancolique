@@ -16,6 +16,7 @@ class Home {
         this.socialLick()
         this.instancesSelect()
         document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
+        document.querySelector('.player-options').addEventListener('click', e => changePanel('settings'))
     }
 
     async news() {
@@ -23,71 +24,46 @@ class Home {
         let news = await config.getNews().then(res => res).catch(err => false);
         if (news) {
             if (!news.length) {
-                let blockNews = document.createElement('div');
-                blockNews.classList.add('news-block');
-                blockNews.innerHTML = `
-                    <div class="news-header">
-                        <img class="server-status-icon" src="assets/images/icon.png">
-                        <div class="header-text">
-                            <div class="title">Aucune news n'est actuellement disponible.</div>
-                        </div>
-                        <div class="date">
-                            <div class="day">1</div>
-                            <div class="month">Janvier</div>
-                        </div>
-                    </div>
-                    <div class="news-content">
-                        <div class="bbWrapper">
-                            <p>Vous pourrez suivre ici toutes les news relative au serveur.</p>
-                        </div>
-                    </div>`
-                newsElement.appendChild(blockNews);
+                newsElement.appendChild(this.newsBlock({
+                    title: 'Aucune news pour le moment',
+                    content: 'Vous pourrez suivre ici toutes les news relatives au serveur.'
+                }));
             } else {
                 for (let News of news) {
                     let date = this.getdate(News.publish_date)
-                    let blockNews = document.createElement('div');
-                    blockNews.classList.add('news-block');
-                    blockNews.innerHTML = `
-                        <div class="news-header">
-                            <img class="server-status-icon" src="assets/images/devlog.png">
-                            <div class="header-text">
-                                <div class="title">${News.title}</div>
-                            </div>
-                            <div class="date">
-                                <div class="day">${date.day}</div>
-                                <div class="month">${date.month}</div>
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <div class="bbWrapper">
-                                <p>${News.content.replace(/\n/g, '</br>')}</p>
-                                <p class="news-author">Auteur - <span>${News.author}</span></p>
-                            </div>
-                        </div>`
-                    newsElement.appendChild(blockNews);
+                    newsElement.appendChild(this.newsBlock({
+                        title: News.title,
+                        content: News.content.replace(/\n/g, '</br>'),
+                        author: News.author,
+                        date: `${date.day} ${date.month} ${date.year}`
+                    }));
                 }
             }
         } else {
-            let blockNews = document.createElement('div');
-            blockNews.classList.add('news-block');
-            blockNews.innerHTML = `
-                <div class="news-header">
-                        <img class="server-status-icon" src="assets/images/icon.png">
-                        <div class="header-text">
-                            <div class="title">Erreur.</div>
-                        </div>
-                        <div class="date">
-                            <div class="day">1</div>
-                            <div class="month">Janvier</div>
-                        </div>
-                    </div>
-                    <div class="news-content">
-                        <div class="bbWrapper">
-                            <p>Impossible de contacter le serveur des news.</p>
-                        </div>
-                    </div>`
-            newsElement.appendChild(blockNews);
+            newsElement.appendChild(this.newsBlock({
+                title: 'Erreur',
+                content: 'Impossible de contacter le serveur des news.'
+            }));
         }
+    }
+
+    newsBlock({ title, content, author, date }) {
+        let blockNews = document.createElement('div');
+        blockNews.classList.add('news-block');
+        blockNews.innerHTML = `
+            <div class="news-meta">
+                <span class="news-date">${date || 'DevLog'}</span>
+                ${author ? `<span class="news-author">par <span>${author}</span></span>` : ''}
+            </div>
+            <div class="news-title">${title}</div>
+            <div class="news-content">
+                <p>${content}</p>
+            </div>`
+        return blockNews;
+    }
+
+    setInstanceName(name) {
+        document.querySelector('.play-instance-name').textContent = name || '';
     }
 
     socialLick() {
@@ -140,6 +116,7 @@ class Home {
             } else console.log(`Initializing instance ${instance.name}...`)
             if (instance.name == instanceSelect) setStatus(instance.status)
         }
+        this.setInstanceName(instanceSelect)
 
         instancePopup.addEventListener('click', async e => {
             let configClient = await this.db.readData('configClient')
@@ -152,6 +129,7 @@ class Home {
                 e.target.classList.add('active-instance');
 
                 configClient.instance_selct = newInstanceSelect
+                this.setInstanceName(newInstanceSelect)
                 await this.db.updateData('configClient', configClient)
                 instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
                 instancePopup.style.display = 'none'

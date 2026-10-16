@@ -69,7 +69,6 @@ function migrateOldUserDataIfNeeded() {
   try {
     const newDir = app.getPath('userData');
     const flag = path.join(newDir, 'migrated.flag');
-    if (fs.existsSync(flag)) return;
 
     // Candidats d’anciens emplacements (adapte si besoin)
     const candidates = dev
@@ -79,6 +78,28 @@ function migrateOldUserDataIfNeeded() {
           path.join(app.getPath('appData'), 'Selvania Launcher'),
           path.join(app.getPath('appData'), 'Electron')
         ];
+
+    // Accounts and settings are stored in this SQLite database in production.
+    // Use a separate marker so the old JSON migration cannot skip it.
+    const databaseFlag = path.join(newDir, 'database-migrated-v2.flag');
+    const databaseDestination = path.join(newDir, 'databases', 'Databases.db');
+
+    if (!fs.existsSync(databaseFlag)) {
+      if (!fs.existsSync(databaseDestination)) {
+        for (const oldDir of candidates) {
+          const databaseSource = path.join(oldDir, 'databases', 'Databases.db');
+          if (!fs.existsSync(databaseSource)) continue;
+
+          fs.mkdirSync(path.dirname(databaseDestination), { recursive: true });
+          fs.copyFileSync(databaseSource, databaseDestination);
+          console.log('[Migrate] Copied database from', oldDir);
+          break;
+        }
+      }
+      fs.writeFileSync(databaseFlag, 'ok');
+    }
+
+    if (fs.existsSync(flag)) return;
 
     let migratedSomething = false;
     for (const oldDir of candidates) {

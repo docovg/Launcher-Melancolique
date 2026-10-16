@@ -1,7 +1,7 @@
 {
   "name": "launcher-melancolique",
   "productName": "Launcher Melancolique",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Launcher moddé pour la survie",
   "main": "src/app.js",
   "author": {
@@ -9,7 +9,7 @@
     "email": "contact@abdelnaim.fr",
     "url": "https://github.com/docovg"
   },
-  "url": "https://abdelnaim.fr/launchermelancoliqueWEB/",
+  "url": "https://api.abdelnaim.fr",
   "scripts": {
     "start": "cross-env-shell NODE_ENV=dev electron .",
     "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",

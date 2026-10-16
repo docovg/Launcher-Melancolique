@@ -58,8 +58,16 @@ class database {
     }
 
     async updateData(tableName, data, key = 1) {
-        let table = await this.getDatabase(tableName);
-        await nodedatabase.updateData(table, { json_data: JSON.stringify(data) }, key)
+        if (!/^[A-Za-z0-9_]+$/.test(tableName)) throw new Error('Invalid database table name');
+
+        const database = await this.getDatabase(tableName);
+        return await new Promise((resolve, reject) => {
+            database.table.run(
+                `UPDATE ${tableName} SET json_data = ?, updatedAt = ? WHERE id = ?`,
+                [JSON.stringify(data), new Date(), key],
+                error => error ? reject(error) : resolve()
+            );
+        });
     }
 
     async deleteData(tableName, key = 1) {

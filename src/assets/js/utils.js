@@ -32,10 +32,11 @@ async function setBackground(theme) {
     } else if (fs.existsSync(`${__dirname}/assets/images/background/${theme ? 'dark' : 'light'}`)) {
         let backgrounds = fs.readdirSync(`${__dirname}/assets/images/background/${theme ? 'dark' : 'light'}`);
         let Background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-        background = `linear-gradient(#00000080, #00000080), url(./assets/images/background/${theme ? 'dark' : 'light'}/${Background})`;
+        background = `linear-gradient(90deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.3) 100%), linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 35%), url(./assets/images/background/${theme ? 'dark' : 'light'}/${Background})`;
     }
     body.style.backgroundImage = background ? background : theme ? '#000' : '#fff';
     body.style.backgroundSize = 'cover';
+    body.style.backgroundPosition = 'center';
 }
 
 async function changePanel(id) {
@@ -52,11 +53,6 @@ async function appdata() {
 async function addAccount(data) {
     let skin = false
     if (data?.profile?.skins[0]?.base64) skin = await new skin2D().creatHeadTexture(data.profile.skins[0].base64);
-    // Construire le lien du profil du joueur avec le nom d'utilisateur
-    const profileUrl = `https://azuriom.abdelnaim.fr/skin3d/3d-api/premium/${encodeURIComponent(data.name)}`;
-    // Ajouter l'iframe à `.player-body`
-    const playerBody = document.querySelector(".player-body");
-    playerBody.innerHTML = `<iframe id="iframeCode" src="${profileUrl}" style="border: none; width: 319px; height: 221px;"></iframe>`;
 
     let div = document.createElement("div");
     div.classList.add("account");
@@ -82,12 +78,20 @@ async function accountSelect(data) {
     if (activeAccount) activeAccount.classList.toggle('account-select');
     account.classList.add('account-select');
     if (data?.profile?.skins[0]?.base64) headplayer(data.profile.skins[0].base64);
+    if (data?.name) playerProfile(data.name);
 }
 
 async function headplayer(skinBase64) {
     let skin = await new skin2D().creatHeadTexture(skinBase64);
     document.querySelector(".player-head").style.backgroundImage = `url(${skin})`;
-    document.querySelector(".player-body").style.backgroundImage = `url('http://163.5.141.45/skin3d/3d-api/premium/DocOVG')`;
+}
+
+function playerProfile(name) {
+    document.querySelector(".player-name").textContent = name;
+    // Personnage 3D du compte sélectionné
+    const profileUrl = `https://azuriom.abdelnaim.fr/skin3d/3d-api/premium/${encodeURIComponent(name)}`;
+    const playerBody = document.querySelector(".player-body");
+    playerBody.innerHTML = `<iframe id="iframeCode" src="${profileUrl}"></iframe>`;
 }
 
 async function setStatus(opt) {
@@ -97,7 +101,7 @@ async function setStatus(opt) {
 
     if (!opt) {
         statusServerElement.classList.add('red')
-        statusServerElement.innerHTML = `Ferme - 0 ms`
+        statusServerElement.innerHTML = `Hors ligne`
         document.querySelector('.status-player-count').classList.add('red')
         playersOnline.innerHTML = '0'
         return
@@ -111,11 +115,11 @@ async function setStatus(opt) {
     if (!statusServer.error) {
         statusServerElement.classList.remove('red')
         document.querySelector('.status-player-count').classList.remove('red')
-        statusServerElement.innerHTML = `En ligne - ${statusServer.ms} ms`
+        statusServerElement.innerHTML = `En ligne · ${statusServer.ms} ms`
         playersOnline.innerHTML = statusServer.playersConnect
     } else {
         statusServerElement.classList.add('red')
-        statusServerElement.innerHTML = `Ferme - 0 ms`
+        statusServerElement.innerHTML = `Hors ligne`
         document.querySelector('.status-player-count').classList.add('red')
         playersOnline.innerHTML = '0'
     }

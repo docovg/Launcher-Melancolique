@@ -6,6 +6,7 @@
 import Login from './panels/login.js';
 import Home from './panels/home.js';
 import Settings from './panels/settings.js';
+import { normalizeMicrosoftAccount, isPermanentMicrosoftAuthError } from './utils/auth.js';
 
 // import modules
 import { logger, config, changePanel, database, popup, setBackground, accountSelect, addAccount, pkg } from './utils.js';
@@ -148,7 +149,82 @@ class Launcher {
                         background: true
                     });
 
-                    let refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);
+                    account = normalizeMicrosoftAccount(account);
+                    let refresh_accounts;
+                    try {
+                        refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);
+                    } catch (error) {
+                        refresh_accounts = {
+                            error: error?.message || String(error),
+                            errorType: 'network'
+                        };
+                    }
+
+                    if (refresh_accounts.error) {
+                        if (isPermanentMicrosoftAuthError(refresh_accounts)) {
+                            await this.db.deleteData('accounts', account_ID)
+                            if (account_ID == account_selected) {
+                                configClient.account_selected = null
+                                await this.db.updateData('configClient', configClient)
+                            }
+                        } else {
+                            // A temporary Microsoft/network failure must not log the user out.
+                            await this.db.updateData('accounts', account, account_ID)
+                            await addAccount(account)
+                            if (account_ID == account_selected) await accountSelect(account)
+                        }
+                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage || refresh_accounts.error}`);
+                        continue;
+                    }
+
+                    refresh_accounts = normalizeMicrosoftAccount(refresh_accounts)
+                    refresh_accounts.ID = account_ID
+                    await this.db.updateData('accounts', refresh_accounts, account_ID)
+                    await addAccount(refresh_accounts)
+                    if (account_ID == account_selected) await accountSelect(refresh_accounts)
+                } else if (account.meta.type == 'AZauth') {
+                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
+                    popupRefresh.openPopup({
+                        title: 'Connexion',
+                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
+                        color: 'var(--color)',
+                        background: false
+                    });
+                    let refresh_accounts = await new AZauth(this.config.online).verify(account);
+
+                    if (refresh_accounts.error) {
+                        await this.db.deleteData('accounts', account_ID)
+                        if (account_ID == account_selected) {
+                            configClient.account_selected = null
+                            await this.db.updateData('configClient', configClient)
+                        }
+                        console.error(`[Account] ${account.name}: ${refresh_accounts.message}`);
+                        continue;
+                    }
+
+                    refresh_accounts.ID = account_ID
+                    await this.db.updateData('accounts', refresh_accounts, account_ID)
+                    await addAccount(refresh_accounts)
+                    if (account_ID == account_selected) await accountSelect(refresh_accounts)
+                } else if (account.meta.type == 'Mojang') {
+                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
+                    popupRefresh.openPopup({
+                        title: 'Connexion',
+                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
+                        color: 'var(--color)',
+                        background: false
+                    });
+                    if (account.meta.online == false) {
+                        let refresh_accounts = await Mojang.login(account.name);
+
+                        refresh_accounts.ID = account_ID
+                        await addAccount(refresh_accounts)
+                        await this.db.updateData('accounts', refresh_accounts, account_ID)
+                        if (account_ID == account_selected) await accountSelect(refresh_accounts)
+                        continue;
+                    }
+
+                    let refresh_accounts = await Mojang.refresh(account);
 
                     if (refresh_accounts.error) {
                         await this.db.deleteData('accounts', account_ID)
@@ -163,71 +239,13 @@ class Launcher {
                     refresh_accounts.ID = account_ID
                     await this.db.updateData('accounts', refresh_accounts, account_ID)
                     await addAccount(refresh_accounts)
-                    if (account_ID == account_selected) accountSelect(refresh_accounts)
-                } else if (account.meta.type == 'AZauth') {
-                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
-                    popupRefresh.openPopup({
-                        title: 'Connexion',
-                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
-                        color: 'var(--color)',
-                        background: false
-                    });
-                    let refresh_accounts = await new AZauth(this.config.online).verify(account);
-
-                    if (refresh_accounts.error) {
-                        this.db.deleteData('accounts', account_ID)
-                        if (account_ID == account_selected) {
-                            configClient.account_selected = null
-                            this.db.updateData('configClient', configClient)
-                        }
-                        console.error(`[Account] ${account.name}: ${refresh_accounts.message}`);
-                        continue;
-                    }
-
-                    refresh_accounts.ID = account_ID
-                    this.db.updateData('accounts', refresh_accounts, account_ID)
-                    await addAccount(refresh_accounts)
-                    if (account_ID == account_selected) accountSelect(refresh_accounts)
-                } else if (account.meta.type == 'Mojang') {
-                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
-                    popupRefresh.openPopup({
-                        title: 'Connexion',
-                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
-                        color: 'var(--color)',
-                        background: false
-                    });
-                    if (account.meta.online == false) {
-                        let refresh_accounts = await Mojang.login(account.name);
-
-                        refresh_accounts.ID = account_ID
-                        await addAccount(refresh_accounts)
-                        this.db.updateData('accounts', refresh_accounts, account_ID)
-                        if (account_ID == account_selected) accountSelect(refresh_accounts)
-                        continue;
-                    }
-
-                    let refresh_accounts = await Mojang.refresh(account);
-
-                    if (refresh_accounts.error) {
-                        this.db.deleteData('accounts', account_ID)
-                        if (account_ID == account_selected) {
-                            configClient.account_selected = null
-                            this.db.updateData('configClient', configClient)
-                        }
-                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage}`);
-                        continue;
-                    }
-
-                    refresh_accounts.ID = account_ID
-                    this.db.updateData('accounts', refresh_accounts, account_ID)
-                    await addAccount(refresh_accounts)
-                    if (account_ID == account_selected) accountSelect(refresh_accounts)
+                    if (account_ID == account_selected) await accountSelect(refresh_accounts)
                 } else {
                     console.error(`[Account] ${account.name}: Account Type Not Found`);
-                    this.db.deleteData('accounts', account_ID)
+                    await this.db.deleteData('accounts', account_ID)
                     if (account_ID == account_selected) {
                         configClient.account_selected = null
-                        this.db.updateData('configClient', configClient)
+                        await this.db.updateData('configClient', configClient)
                     }
                 }
             }
@@ -236,20 +254,20 @@ class Launcher {
             configClient = await this.db.readData('configClient')
             account_selected = configClient ? configClient.account_selected : null
 
-            if (!account_selected) {
-                let uuid = accounts[0].ID
-                if (uuid) {
-                    configClient.account_selected = uuid
-                    await this.db.updateData('configClient', configClient)
-                    accountSelect(uuid)
-                }
-            }
-
             if (!accounts.length) {
-                config.account_selected = null
-                await this.db.updateData('configClient', config);
+                configClient.account_selected = null
+                await this.db.updateData('configClient', configClient);
                 popupRefresh.closePopup()
                 return changePanel("login");
+            }
+
+            if (!account_selected) {
+                let account = accounts[0]
+                if (account?.ID) {
+                    configClient.account_selected = account.ID
+                    await this.db.updateData('configClient', configClient)
+                    await accountSelect(account)
+                }
             }
 
             popupRefresh.closePopup()
