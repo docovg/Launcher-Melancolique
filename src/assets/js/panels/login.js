@@ -195,7 +195,19 @@ class Login {
     async saveData(connectionData) {
         connectionData = normalizeMicrosoftAccount(connectionData);
         let configClient = await this.db.readData('configClient');
-        let account = await this.db.createData('accounts', connectionData)
+        const accounts = await this.db.readAllData('accounts')
+        const existingAccount = accounts.find(account =>
+            account.uuid === connectionData.uuid ||
+            (account.meta?.type === connectionData.meta?.type && account.name === connectionData.name)
+        )
+        let account
+
+        if (existingAccount) {
+            account = { ...connectionData, ID: existingAccount.ID }
+            await this.db.updateData('accounts', account, existingAccount.ID)
+        } else {
+            account = await this.db.createData('accounts', connectionData)
+        }
         let instanceSelect = configClient.instance_selct
         let instancesList = await config.getInstanceList()
         configClient.account_selected = account.ID;

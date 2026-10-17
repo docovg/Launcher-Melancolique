@@ -26,53 +26,81 @@ class database {
         });
     }
 
+    async closeDatabase(database) {
+        if (!database?.table) return;
+
+        await new Promise((resolve, reject) => {
+            database.table.close(error => error ? reject(error) : resolve())
+        })
+    }
+
     async createData(tableName, data) {
         let table = await this.getDatabase(tableName);
-        data = await nodedatabase.createData(table, { json_data: JSON.stringify(data) })
-        let id = data.id
-        data = JSON.parse(data.json_data)
-        data.ID = id
-        return data
+        try {
+            data = await nodedatabase.createData(table, { json_data: JSON.stringify(data) })
+            let id = data.id
+            data = JSON.parse(data.json_data)
+            data.ID = id
+            return data
+        } finally {
+            await this.closeDatabase(table)
+        }
     }
 
     async readData(tableName, key = 1) {
         let table = await this.getDatabase(tableName);
-        let data = await nodedatabase.getDataById(table, key)
-        if (data) {
-            let id = data.id
-            data = JSON.parse(data.json_data)
-            data.ID = id
+        try {
+            let data = await nodedatabase.getDataById(table, key)
+            if (data) {
+                let id = data.id
+                data = JSON.parse(data.json_data)
+                data.ID = id
+            }
+            return data ? data : undefined
+        } finally {
+            await this.closeDatabase(table)
         }
-        return data ? data : undefined
     }
 
     async readAllData(tableName) {
         let table = await this.getDatabase(tableName);
-        let data = await nodedatabase.getAllData(table)
-        return data.map(info => {
-            let id = info.id
-            info = JSON.parse(info.json_data)
-            info.ID = id
-            return info
-        })
+        try {
+            let data = await nodedatabase.getAllData(table)
+            return data.map(info => {
+                let id = info.id
+                info = JSON.parse(info.json_data)
+                info.ID = id
+                return info
+            })
+        } finally {
+            await this.closeDatabase(table)
+        }
     }
 
     async updateData(tableName, data, key = 1) {
         if (!/^[A-Za-z0-9_]+$/.test(tableName)) throw new Error('Invalid database table name');
 
         const database = await this.getDatabase(tableName);
-        return await new Promise((resolve, reject) => {
-            database.table.run(
-                `UPDATE ${tableName} SET json_data = ?, updatedAt = ? WHERE id = ?`,
-                [JSON.stringify(data), new Date(), key],
-                error => error ? reject(error) : resolve()
-            );
-        });
+        try {
+            return await new Promise((resolve, reject) => {
+                database.table.run(
+                    `UPDATE ${tableName} SET json_data = ?, updatedAt = ? WHERE id = ?`,
+                    [JSON.stringify(data), new Date(), key],
+                    error => error ? reject(error) : resolve()
+                );
+            });
+        } finally {
+            await this.closeDatabase(database)
+        }
     }
 
     async deleteData(tableName, key = 1) {
         let table = await this.getDatabase(tableName);
-        await nodedatabase.deleteData(table, key)
+        try {
+            await nodedatabase.deleteData(table, key)
+        } finally {
+            await this.closeDatabase(table)
+        }
     }
 }
 

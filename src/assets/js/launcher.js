@@ -6,7 +6,7 @@
 import Login from './panels/login.js';
 import Home from './panels/home.js';
 import Settings from './panels/settings.js';
-import { normalizeMicrosoftAccount, isPermanentMicrosoftAuthError } from './utils/auth.js';
+import { normalizeMicrosoftAccount, shouldRefreshMicrosoftAccount, isPermanentMicrosoftAuthError } from './utils/auth.js';
 
 // import modules
 import { logger, config, changePanel, database, popup, setBackground, accountSelect, addAccount, pkg } from './utils.js';
@@ -150,30 +150,28 @@ class Launcher {
                     });
 
                     account = normalizeMicrosoftAccount(account);
-                    let refresh_accounts;
-                    try {
-                        refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);
-                    } catch (error) {
-                        refresh_accounts = {
-                            error: error?.message || String(error),
-                            errorType: 'network'
-                        };
+                    await this.db.updateData('accounts', account, account_ID)
+
+                    let refresh_accounts = account;
+                    if (shouldRefreshMicrosoftAccount(account)) {
+                        try {
+                            refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);
+                        } catch (error) {
+                            refresh_accounts = {
+                                error: error?.message || String(error),
+                                errorType: 'network'
+                            };
+                        }
                     }
 
                     if (refresh_accounts.error) {
-                        if (isPermanentMicrosoftAuthError(refresh_accounts)) {
-                            await this.db.deleteData('accounts', account_ID)
-                            if (account_ID == account_selected) {
-                                configClient.account_selected = null
-                                await this.db.updateData('configClient', configClient)
-                            }
-                        } else {
-                            // A temporary Microsoft/network failure must not log the user out.
-                            await this.db.updateData('accounts', account, account_ID)
-                            await addAccount(account)
-                            if (account_ID == account_selected) await accountSelect(account)
-                        }
-                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage || refresh_accounts.error}`);
+                        // Authentication failures must never erase a locally saved account.
+                        // A reconnect can replace it later while keeping the same database row.
+                        await this.db.updateData('accounts', account, account_ID)
+                        await addAccount(account)
+                        if (account_ID == account_selected) await accountSelect(account)
+                        const errorKind = isPermanentMicrosoftAuthError(refresh_accounts) ? 'reauth-required' : 'temporary'
+                        console.error(`[Account:${errorKind}] ${account.name}: ${refresh_accounts.errorMessage || refresh_accounts.error}`);
                         continue;
                     }
 
