@@ -58,7 +58,8 @@ jobs:
           path: |
             dist/*.exe
             dist/*.AppImage
-            dist/*.yml
+            dist/latest.yml
+            dist/latest-linux.yml
             dist/*.blockmap
 
   build-macos:
@@ -140,7 +141,7 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.zip
-            dist/*.yml
+            dist/latest-mac.yml
             dist/*.blockmap
 
   publish-release:
@@ -176,7 +177,9 @@ jobs:
 
           if gh release view "$VERSION" >/dev/null 2>&1; then
             gh release edit "$VERSION" --title "release $VERSION" "${prerelease_args[@]}"
-            gh release upload "$VERSION" "${files[@]}" --clobber
+            for file in "${files[@]}"; do
+              gh release upload "$VERSION" "$file" --clobber
+            done
           else
             gh release create "$VERSION" "${files[@]}" \
               --target "$GITHUB_SHA" \
