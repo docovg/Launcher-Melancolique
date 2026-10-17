@@ -2,12 +2,15 @@
  * @author Luuxis
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0
  */
-import { config, database, logger, changePanel, appdata, setStatus, pkg, popup } from '../utils.js'
+import { config, database, logger, changePanel, appdata, getServerStatus, renderServerStatus, pkg, popup } from '../utils.js'
+import { INSTANCE_ICONS, PICKER_ICONS, resolveInstanceIcon, createIconGlyph, createInstanceIcon } from '../utils/instanceIcons.js'
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
 const fs = require('fs')
 const path = require('path')
+
+const DEFAULT_INSTANCE_ART = 'assets/images/instances/default.jpg'
 
 class Home {
     static id = "home";
@@ -92,9 +95,12 @@ class Home {
             formError: document.querySelector('.instance-form-error'),
             deletePopup: document.querySelector('.instance-delete-popup'),
             deleteCopy: document.querySelector('.instance-delete-copy'),
-            railTooltip: document.querySelector('.instance-rail-tooltip')
+            railTooltip: document.querySelector('.instance-rail-tooltip'),
+            art: document.querySelector('.instance-hero-art'),
+            iconPicker: document.querySelector('.instance-icon-picker')
         }
 
+        this.buildIconPicker()
         this.bindInstanceManagerEvents()
         await this.refreshInstances()
     }
@@ -111,7 +117,9 @@ class Home {
             const enabled = ui.loaderInput.value !== 'none'
             ui.loaderVersionInput.disabled = !enabled
             if (enabled && !ui.loaderVersionInput.value) ui.loaderVersionInput.value = 'latest'
+            this.updateAutoIconPreview()
         })
+        ui.nameInput.addEventListener('input', () => this.updateAutoIconPreview())
 
         ui.createForm.addEventListener('submit', async event => {
             event.preventDefault()
@@ -123,6 +131,7 @@ class Home {
             if (button) await this.selectInstance(button.dataset.instance)
         })
 
+        document.querySelector('.instance-open-btn').addEventListener('click', () => this.openInstanceFolder())
         document.querySelector('.instance-delete-btn').addEventListener('click', () => this.openDeleteInstance())
         document.querySelector('.instance-delete-confirm').addEventListener('click', async () => this.deleteLocalInstance())
         document.querySelector('.play-instance').addEventListener('click', () => this.startGame())
@@ -132,6 +141,9 @@ class Home {
         })
         ui.deletePopup.addEventListener('click', event => {
             if (event.target === ui.deletePopup) this.closeDeleteInstance()
+        })
+        ui.art.addEventListener('error', () => {
+            if (ui.art.getAttribute('src') !== DEFAULT_INSTANCE_ART) ui.art.src = DEFAULT_INSTANCE_ART
         })
 
         document.addEventListener('keydown', event => {
@@ -216,10 +228,7 @@ class Home {
             button.addEventListener('focus', () => this.showInstanceTooltip(button, displayName, `${minecraftVersion} · ${loaderName}`))
             button.addEventListener('blur', () => this.hideInstanceTooltip())
 
-            const icon = document.createElement('span')
-            icon.className = 'instance-list-icon'
-            icon.setAttribute('aria-hidden', 'true')
-            icon.textContent = this.getInstanceInitials(displayName)
+            const icon = createInstanceIcon(instance, 'instance-icon instance-list-icon')
 
             const copy = document.createElement('span')
             copy.className = 'instance-list-copy'
@@ -290,44 +299,73 @@ class Home {
         playAction.disabled = !instance
 
         if (!instance) {
+            this.renderedInstanceName = null
+            this.instanceDirectory = null
+            this.setInstanceArt(null)
             this.setInstanceName('')
             this.updateLocalStatus(null)
             return
         }
 
         const displayName = instance.displayName || instance.name
-        const loaderType = this.formatLoader(instance.loadder?.loadder_type)
         const isLocal = instance.source === 'local'
+        this.instanceDirectory = null
+
+        if (this.renderedInstanceName !== instance.name) {
+            this.renderedInstanceName = instance.name
+            this.playInstanceTransition()
+        }
+        this.setInstanceArt(instance.background)
 
         detail.querySelector('.instance-detail-name').textContent = displayName
         detail.querySelector('.instance-detail-name').title = displayName
-        detail.querySelector('.instance-detail-description').textContent = isLocal
+        detail.querySelector('.instance-detail-description').textContent = instance.description || (isLocal
             ? 'Configuration privée enregistrée sur cet ordinateur.'
-            : 'Instance officielle synchronisée avec le serveur du launcher.'
+            : 'Instance officielle synchronisée avec le serveur du launcher.')
         detail.querySelector('.instance-minecraft-version').textContent = instance.loadder?.minecraft_version || 'Inconnue'
-        detail.querySelector('.instance-loader-type').textContent = loaderType
-        detail.querySelector('.instance-loader-version').textContent = instance.loadder?.loadder_type === 'none'
-            ? 'Non applicable'
-            : instance.loadder?.loadder_version || 'latest'
-        detail.querySelector('.instance-sync-mode').textContent = isLocal
+        detail.querySelector('.instance-loader-type').textContent = this.formatLoaderLabel(instance.loadder)
+        const syncMode = detail.querySelector('.instance-sync-mode')
+        syncMode.textContent = isLocal
             ? 'Locale uniquement'
             : instance.verify ? 'Vérifiée au lancement' : 'Standard'
+        syncMode.title = isLocal
+            ? 'Enregistrée sur cet ordinateur'
+            : instance.verify ? 'Fichiers contrôlés avant chaque partie' : 'Fichiers téléchargés depuis le serveur'
 
         const badge = detail.querySelector('.instance-source-badge')
-        badge.textContent = isLocal ? 'Locale' : 'Officielle'
+        badge.textContent = isLocal ? 'Instance locale' : 'Instance officielle'
         badge.classList.toggle('is-local', isLocal)
-
-        const root = await appdata()
-        const dataDirectory = process.platform === 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`
-        detail.querySelector('.instance-directory-value').textContent = path.join(
-            root,
-            dataDirectory,
-            'instances',
-            instance.instanceDirectory || instance.name
+        detail.querySelector('.instance-hero-icon-slot').replaceChildren(
+            createInstanceIcon(instance, 'instance-icon instance-hero-icon')
         )
 
         this.setInstanceName(displayName)
-        await this.updateInstanceStatus(instance)
+        const statusUpdate = this.updateInstanceStatus(instance)
+
+        const root = await appdata()
+        if (this.selectedInstance !== instance) return
+
+        const dataDirectory = process.platform === 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`
+        const directory = path.join(root, dataDirectory, 'instances', instance.instanceDirectory || instance.name)
+        const directoryElement = detail.querySelector('.instance-directory-value')
+        this.instanceDirectory = directory
+        directoryElement.textContent = this.formatDirectory(directory)
+        directoryElement.title = directory
+
+        await statusUpdate
+    }
+
+    setInstanceArt(source) {
+        const art = this.instanceUI.art
+        const next = source || DEFAULT_INSTANCE_ART
+        if (art.getAttribute('src') !== next) art.src = next
+    }
+
+    playInstanceTransition() {
+        const detail = this.instanceUI.detail
+        detail.classList.remove('is-entering')
+        void detail.offsetWidth
+        detail.classList.add('is-entering')
     }
 
     async updateInstanceStatus(instance) {
@@ -339,12 +377,12 @@ class Home {
             return
         }
 
+        document.querySelector('.server-status-name').textContent = instance.status.nameServer
         document.querySelector('.player-count-label').textContent = 'joueurs'
-        await setStatus(instance.status)
 
-        if (requestId !== this.statusRequestId && this.selectedInstance) {
-            await this.updateInstanceStatus(this.selectedInstance)
-        }
+        const status = await getServerStatus(instance.status)
+        // Une autre instance a été sélectionnée entre-temps : cette réponse est périmée.
+        if (requestId === this.statusRequestId) renderServerStatus(status)
     }
 
     updateLocalStatus(instance) {
@@ -357,6 +395,25 @@ class Home {
         statusText.textContent = instance ? 'Instance locale' : 'Aucune instance'
     }
 
+    async openInstanceFolder() {
+        const directory = this.instanceDirectory
+        if (!directory) return
+
+        try {
+            fs.mkdirSync(directory, { recursive: true })
+            const error = await shell.openPath(directory)
+            if (error) throw new Error(error)
+        } catch (error) {
+            console.error('[Instances] Unable to open instance folder:', error)
+            new popup().openPopup({
+                title: 'Dossier inaccessible',
+                content: `Impossible d’ouvrir le dossier de l’instance : ${error.message}`,
+                color: 'var(--danger-color)',
+                options: true
+            })
+        }
+    }
+
     openCreateInstance() {
         const ui = this.instanceUI
         ui.createForm.reset()
@@ -365,6 +422,8 @@ class Home {
         ui.loaderVersionInput.value = 'latest'
         ui.loaderVersionInput.disabled = true
         ui.formError.textContent = ''
+        ui.iconPicker.querySelector('input[value="auto"]').checked = true
+        this.updateAutoIconPreview()
         ui.createPopup.classList.add('is-open')
         ui.createPopup.setAttribute('aria-hidden', 'false')
         setTimeout(() => ui.nameInput.focus(), 0)
@@ -383,6 +442,7 @@ class Home {
         const minecraftVersion = ui.versionInput.value.trim()
         const loaderType = ui.loaderInput.value
         const loaderVersion = ui.loaderVersionInput.value.trim() || 'latest'
+        const iconChoice = ui.iconPicker.querySelector('input:checked')?.value
 
         if (displayName.length < 2) {
             ui.formError.textContent = 'Le nom doit contenir au moins 2 caractères.'
@@ -417,6 +477,7 @@ class Home {
                 name: `local-${timestamp}`,
                 displayName,
                 source: 'local',
+                icon: INSTANCE_ICONS[iconChoice] ? iconChoice : null,
                 instanceDirectory: `${safeName}-${timestamp.toString(36)}`,
                 url: null,
                 loadder: {
@@ -472,14 +533,40 @@ class Home {
         await this.refreshInstances()
     }
 
-    getInstanceInitials(name) {
-        return String(name)
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(part => part[0])
-            .join('')
-            .toUpperCase() || 'MC'
+    buildIconPicker() {
+        const picker = this.instanceUI.iconPicker
+        const options = [['auto', 'Automatique (selon le nom et le chargeur)'], ...PICKER_ICONS.map(name => [name, INSTANCE_ICONS[name].label])]
+
+        for (const [value, label] of options) {
+            const option = document.createElement('label')
+            option.className = 'instance-icon-option'
+            option.title = label
+            if (value === 'auto') option.dataset.auto = ''
+
+            const input = document.createElement('input')
+            input.type = 'radio'
+            input.name = 'instance-icon'
+            input.value = value
+            input.checked = value === 'auto'
+            input.setAttribute('aria-label', label)
+
+            const swatch = document.createElement('span')
+            swatch.className = 'instance-icon instance-icon-swatch'
+            swatch.appendChild(createIconGlyph(value === 'auto' ? 'block' : value))
+
+            option.append(input, swatch)
+            picker.appendChild(option)
+        }
+    }
+
+    // L'option « Automatique » montre l'icône que l'instance recevra avec le nom et le chargeur saisis
+    updateAutoIconPreview() {
+        const ui = this.instanceUI
+        const { name } = resolveInstanceIcon({
+            displayName: ui.nameInput.value,
+            loadder: { loadder_type: ui.loaderInput.value }
+        })
+        ui.iconPicker.querySelector('[data-auto] .instance-icon-swatch').replaceChildren(createIconGlyph(name))
     }
 
     formatLoader(loader) {
@@ -492,6 +579,24 @@ class Home {
             quilt: 'Quilt'
         }
         return labels[String(loader || 'none').toLowerCase()] || String(loader || 'Vanilla')
+    }
+
+    formatLoaderLabel(loader) {
+        const name = this.formatLoader(loader?.loadder_type)
+        if (String(loader?.loadder_type || 'none').toLowerCase() === 'none') return name
+
+        const build = String(loader.loadder_version || 'latest').trim()
+        if (build.toLowerCase() === 'latest') return `${name} · dernière`
+        if (build.toLowerCase() === 'recommended') return `${name} · recommandée`
+
+        // « 1.20.1-47.4.0 » → « 47.4.0 » : la version Minecraft est déjà affichée à côté
+        const prefix = `${loader.minecraft_version}-`
+        return `${name} ${build.startsWith(prefix) ? build.slice(prefix.length) : build}`
+    }
+
+    formatDirectory(directory) {
+        const parts = directory.split(/[\\/]+/).filter(Boolean)
+        return parts.length > 3 ? `…${path.sep}${parts.slice(-3).join(path.sep)}` : directory
     }
 
     trapDialogFocus(event, dialog) {
@@ -581,6 +686,13 @@ class Home {
             })
             return
         }
+
+        let packMenuServerSynced = false
+        launch.on('data', event => {
+            if (packMenuServerSynced || !String(event).startsWith('Launching with arguments')) return
+            packMenuServerSynced = true
+            this.syncPackMenuServerAddress(opt.path, opt.instance, options.status)
+        })
 
         launch.Launch(opt);
 
@@ -697,6 +809,40 @@ class Home {
 
             fs.renameSync(source, destination)
             console.info(`[Instances] Fichier incompatible désactivé : ${relativeSource}`)
+        }
+    }
+
+    syncPackMenuServerAddress(launcherRoot, instanceName, status = null) {
+        const host = String(status?.ip || '').trim()
+        const port = Number(status?.port)
+        if (!host || !Number.isInteger(port) || port < 1 || port > 65535) return
+
+        const instanceRoot = path.resolve(launcherRoot, 'instances', instanceName)
+        const buttonFile = path.resolve(
+            instanceRoot,
+            'packmenu',
+            'resources',
+            'assets',
+            'packmenu',
+            'buttons',
+            'multiplayer.json'
+        )
+        const relativeButtonFile = path.relative(instanceRoot, buttonFile)
+        if (!relativeButtonFile || relativeButtonFile.startsWith('..') || path.isAbsolute(relativeButtonFile)) return
+        if (!fs.existsSync(buttonFile) || !fs.statSync(buttonFile).isFile()) return
+
+        try {
+            const button = JSON.parse(fs.readFileSync(buttonFile, 'utf8'))
+            if (button.action !== 'CONNECT_TO_SERVER') return
+
+            const address = `${host}:${port}`
+            if (button.data === address) return
+
+            button.data = address
+            fs.writeFileSync(buttonFile, `${JSON.stringify(button, null, '\t')}\n`, 'utf8')
+            console.info(`[Instances] Adresse PackMenu synchronisée : ${address}`)
+        } catch (error) {
+            console.warn(`[Instances] Impossible de synchroniser l'adresse PackMenu : ${error.message}`)
         }
     }
 

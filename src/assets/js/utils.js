@@ -94,35 +94,38 @@ function playerProfile(name) {
     if (playerBody) playerBody.innerHTML = `<iframe id="iframeCode" src="${profileUrl}"></iframe>`;
 }
 
-async function setStatus(opt) {
-    let nameServerElement = document.querySelector('.server-status-name')
+async function getServerStatus(opt) {
+    if (!opt) return { online: false, players: 0 }
+
+    let status = new Status(opt.ip, opt.port);
+    let statusServer = await status.getStatus().then(res => res).catch(err => err);
+
+    if (!statusServer || statusServer instanceof Error || statusServer.error) return { online: false, players: 0 }
+    return { online: true, players: statusServer.playersConnect ?? 0, ms: statusServer.ms }
+}
+
+function renderServerStatus(status) {
     let statusServerElement = document.querySelector('.server-status-text')
     let playersOnline = document.querySelector('.status-player-count .player-count')
 
-    if (!opt) {
-        statusServerElement.classList.add('red')
-        statusServerElement.innerHTML = `Hors ligne`
-        document.querySelector('.status-player-count').classList.add('red')
-        playersOnline.innerHTML = '0'
-        return
-    }
-
-    let { ip, port, nameServer } = opt
-    nameServerElement.innerHTML = nameServer
-    let status = new Status(ip, port);
-    let statusServer = await status.getStatus().then(res => res).catch(err => err);
-
-    if (!statusServer.error) {
+    if (status.online) {
         statusServerElement.classList.remove('red')
         document.querySelector('.status-player-count').classList.remove('red')
-        statusServerElement.innerHTML = `En ligne · ${statusServer.ms} ms`
-        playersOnline.innerHTML = statusServer.playersConnect
+        statusServerElement.innerHTML = `En ligne · ${status.ms} ms`
+        playersOnline.innerHTML = status.players
     } else {
         statusServerElement.classList.add('red')
         statusServerElement.innerHTML = `Hors ligne`
         document.querySelector('.status-player-count').classList.add('red')
         playersOnline.innerHTML = '0'
     }
+}
+
+async function setStatus(opt) {
+    if (opt) document.querySelector('.server-status-name').innerHTML = opt.nameServer
+    let status = await getServerStatus(opt)
+    renderServerStatus(status)
+    return status
 }
 
 
@@ -139,5 +142,7 @@ export {
     accountSelect as accountSelect,
     slider as Slider,
     pkg as pkg,
-    setStatus as setStatus
+    setStatus as setStatus,
+    getServerStatus as getServerStatus,
+    renderServerStatus as renderServerStatus
 }
