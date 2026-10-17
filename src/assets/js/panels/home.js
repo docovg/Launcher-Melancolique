@@ -3,7 +3,7 @@
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0
  */
 import { config, database, logger, changePanel, appdata, getServerStatus, renderServerStatus, pkg, popup } from '../utils.js'
-import { INSTANCE_ICONS, PICKER_ICONS, resolveInstanceIcon, createIconGlyph, createInstanceIcon } from '../utils/instanceIcons.js'
+import { createInstanceIcon } from '../utils/instanceIcons.js'
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
@@ -96,11 +96,9 @@ class Home {
             deletePopup: document.querySelector('.instance-delete-popup'),
             deleteCopy: document.querySelector('.instance-delete-copy'),
             railTooltip: document.querySelector('.instance-rail-tooltip'),
-            art: document.querySelector('.instance-hero-art'),
-            iconPicker: document.querySelector('.instance-icon-picker')
+            art: document.querySelector('.instance-hero-art')
         }
 
-        this.buildIconPicker()
         this.bindInstanceManagerEvents()
         await this.refreshInstances()
     }
@@ -117,9 +115,7 @@ class Home {
             const enabled = ui.loaderInput.value !== 'none'
             ui.loaderVersionInput.disabled = !enabled
             if (enabled && !ui.loaderVersionInput.value) ui.loaderVersionInput.value = 'latest'
-            this.updateAutoIconPreview()
         })
-        ui.nameInput.addEventListener('input', () => this.updateAutoIconPreview())
 
         ui.createForm.addEventListener('submit', async event => {
             event.preventDefault()
@@ -422,8 +418,6 @@ class Home {
         ui.loaderVersionInput.value = 'latest'
         ui.loaderVersionInput.disabled = true
         ui.formError.textContent = ''
-        ui.iconPicker.querySelector('input[value="auto"]').checked = true
-        this.updateAutoIconPreview()
         ui.createPopup.classList.add('is-open')
         ui.createPopup.setAttribute('aria-hidden', 'false')
         setTimeout(() => ui.nameInput.focus(), 0)
@@ -442,7 +436,6 @@ class Home {
         const minecraftVersion = ui.versionInput.value.trim()
         const loaderType = ui.loaderInput.value
         const loaderVersion = ui.loaderVersionInput.value.trim() || 'latest'
-        const iconChoice = ui.iconPicker.querySelector('input:checked')?.value
 
         if (displayName.length < 2) {
             ui.formError.textContent = 'Le nom doit contenir au moins 2 caractères.'
@@ -477,7 +470,6 @@ class Home {
                 name: `local-${timestamp}`,
                 displayName,
                 source: 'local',
-                icon: INSTANCE_ICONS[iconChoice] ? iconChoice : null,
                 instanceDirectory: `${safeName}-${timestamp.toString(36)}`,
                 url: null,
                 loadder: {
@@ -531,42 +523,6 @@ class Home {
         this.instanceUI.deletePopup.setAttribute('aria-hidden', 'true')
         this.pendingDeleteInstance = null
         await this.refreshInstances()
-    }
-
-    buildIconPicker() {
-        const picker = this.instanceUI.iconPicker
-        const options = [['auto', 'Automatique (selon le nom et le chargeur)'], ...PICKER_ICONS.map(name => [name, INSTANCE_ICONS[name].label])]
-
-        for (const [value, label] of options) {
-            const option = document.createElement('label')
-            option.className = 'instance-icon-option'
-            option.title = label
-            if (value === 'auto') option.dataset.auto = ''
-
-            const input = document.createElement('input')
-            input.type = 'radio'
-            input.name = 'instance-icon'
-            input.value = value
-            input.checked = value === 'auto'
-            input.setAttribute('aria-label', label)
-
-            const swatch = document.createElement('span')
-            swatch.className = 'instance-icon instance-icon-swatch'
-            swatch.appendChild(createIconGlyph(value === 'auto' ? 'block' : value))
-
-            option.append(input, swatch)
-            picker.appendChild(option)
-        }
-    }
-
-    // L'option « Automatique » montre l'icône que l'instance recevra avec le nom et le chargeur saisis
-    updateAutoIconPreview() {
-        const ui = this.instanceUI
-        const { name } = resolveInstanceIcon({
-            displayName: ui.nameInput.value,
-            loadder: { loadder_type: ui.loaderInput.value }
-        })
-        ui.iconPicker.querySelector('[data-auto] .instance-icon-swatch').replaceChildren(createIconGlyph(name))
     }
 
     formatLoader(loader) {

@@ -642,32 +642,31 @@
  *                                                                             *
  ******************************************************************************/
 
-/* Tuile d'icône : la teinte vient de l'instance (--instance-hue, posée en JS) */
+/* Tuile d'icône : emplacement d'objet façon inventaire, l'icône du chargeur au centre */
 .instance-icon {
-    --instance-hue: 32;
     display: flex;
     align-items: center;
     justify-content: center;
     flex: none;
     box-sizing: border-box;
     overflow: hidden;
-    border: 1px solid hsla(var(--instance-hue), 55%, 62%, 0.55);
+    border: 1px solid var(--bronze);
     background:
-        radial-gradient(circle at 30% 20%, hsla(var(--instance-hue), 78%, 54%, 0.55), transparent 62%),
-        hsl(var(--instance-hue), 42%, 11%);
-    color: hsl(var(--instance-hue), 70%, 88%);
-    box-shadow: inset 0 0 0 1px rgba(255, 236, 205, 0.08), 0 4px 12px rgba(0, 0, 0, 0.3);
+        radial-gradient(circle at 50% 35%, rgba(255, 214, 150, 0.12), transparent 65%),
+        #1a0f0a;
+    box-shadow: inset 0 0 0 1px rgba(255, 214, 150, 0.1), inset 0 -6px 12px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.instance-icon svg {
-    width: 56%;
-    height: 56%;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
+.instance-icon-art {
+    width: 84%;
+    height: 84%;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.55));
+}
+
+.instance-icon-art.is-pixel {
+    width: 80%;
+    height: 80%;
+    image-rendering: pixelated;
 }
 
 .instance-icon.has-image {
@@ -1445,90 +1444,6 @@
     font-weight: 400;
 }
 
-.instance-icon-field {
-    min-width: 0;
-    margin: 0 0 12px;
-    padding: 0;
-    border: 0;
-}
-
-.instance-icon-field legend {
-    margin-bottom: 7px;
-    padding: 0;
-    color: var(--color);
-    font-size: 0.67rem;
-}
-
-.instance-icon-picker {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.instance-icon-option {
-    position: relative;
-    cursor: pointer;
-}
-
-.instance-icon-option input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.instance-icon-option .instance-icon-swatch {
-    width: 40px;
-    height: 40px;
-    border-color: var(--border-color);
-    border-radius: 10px;
-    background: var(--background-element);
-    color: var(--color-muted);
-    box-shadow: none;
-    transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s var(--ease);
-}
-
-.instance-icon-option:hover .instance-icon-swatch {
-    border-color: var(--bronze);
-    color: var(--color);
-    transform: translateY(-1px);
-}
-
-.instance-icon-option input:checked + .instance-icon-swatch {
-    border-color: var(--gold);
-    background: radial-gradient(circle at 30% 20%, rgba(232, 50, 28, 0.42), transparent 62%), #2a140c;
-    color: var(--parchment);
-    box-shadow: 0 0 0 3px rgba(216, 166, 87, 0.16);
-}
-
-.instance-icon-option input:focus-visible + .instance-icon-swatch {
-    outline: 2px solid var(--gold);
-    outline-offset: 2px;
-}
-
-.instance-icon-option[data-auto] .instance-icon-swatch {
-    border-style: dashed;
-}
-
-.instance-icon-option[data-auto]::after {
-    content: 'Auto';
-    position: absolute;
-    bottom: -5px;
-    left: 50%;
-    padding: 0 4px;
-    border-radius: 4px;
-    background: var(--gold);
-    color: #2a160c;
-    font-size: 0.45rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    line-height: 1.5;
-    text-transform: uppercase;
-    transform: translateX(-50%);
-    pointer-events: none;
-}
-
 .instance-form-error {
     min-height: 18px;
     margin: -2px 0 8px;
@@ -1631,7 +1546,6 @@
     .instance-list-item,
     .instance-open-btn,
     .instance-delete-btn,
-    .instance-icon-swatch,
     .instance-dialog-actions button {
         transition: none;
     }

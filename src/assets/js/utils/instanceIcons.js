@@ -1,149 +1,217 @@
 /**
- * Icônes des instances : glyphes SVG (trait, grille 24×24).
- * Ordre de résolution : champ `icon` de l'instance (clé ou image), thème deviné
- * depuis le nom, puis chargeur.
+ * Icônes des instances : pixel art du chargeur (bloc d'herbe pour Vanilla, enclume
+ * pour Forge/NeoForge, tissu pour Fabric, patchwork pour Quilt), ou image fournie
+ * par la config de l'instance (champ `icon`).
  */
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
-const INSTANCE_ICONS = {
-    castle: {
-        label: 'Colonie',
-        path: 'M3 21h18M4 21V7h1.5v1.5h2V7H9v14M15 21V7h1.5v1.5h2V7H20v14M9 12h6M10.5 21v-3.5a1.5 1.5 0 0 1 3 0V21M6.5 7V3l3 1.25-3 1.25'
-    },
-    cog: {
-        label: 'Technique',
-        path: 'M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM12 3.5V6M12 18v2.5M3.5 12H6M18 12h2.5M6 6l1.75 1.75M16.25 16.25 18 18M6 18l1.75-1.75M16.25 7.75 18 6'
-    },
-    sword: {
-        label: 'Combat',
-        path: 'M20 4h-4.5l-9 9M20 4v4.5l-9 9M5 11.5l7.5 7.5M8.5 15.5 4 20'
-    },
-    pickaxe: {
-        label: 'Survie',
-        path: 'M5.5 5.5Q17.5 6.5 18.5 18.5Q13.5 10.5 5.5 5.5zM12.7 11.3 4 20'
-    },
-    tree: {
-        label: 'Nature',
-        path: 'M12 3 6.5 10.5h3L5 16.5h14l-4.5-6h3zM12 16.5V21'
-    },
-    compass: {
-        label: 'Aventure',
-        path: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15.5 8.5l-2.2 4.8-4.8 2.2 2.2-4.8z'
-    },
-    star: {
-        label: 'Magie',
-        path: 'M11 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7zM18.5 16v4M16.5 18h4'
-    },
-    flask: {
-        label: 'Alchimie',
-        path: 'M9.5 3h5M10.5 3v6.2L5.3 18.1A2 2 0 0 0 7 21h10a2 2 0 0 0 1.7-2.9L13.5 9.2V3M7.5 15h9'
-    },
-    block: {
-        label: 'Vanilla',
-        path: 'M12 3l8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9M4 10.5l8 4.5 8-4.5'
-    },
-    anvil: {
-        label: 'Forge',
-        path: 'M3 6h13c0 2 2 3.5 5 3.5V11c-3 0-5 1-6 3H9c-1-2-3-3-6-3zM9.5 14v4M14.5 14v4M6.5 21v-3h11v3z'
-    },
-    spool: {
-        label: 'Fabric',
-        path: 'M6 4h12M6 20h12M8 4v16M16 4v16M8 8l8 2M8 12l8 2M8 16l8 2'
-    },
-    quilt: {
-        label: 'Quilt',
-        path: 'M5 5h14v14H5zM12 5v14M5 12h14M7.5 7.5l2 2M14.5 14.5l2 2'
-    }
+// Bloc d'herbe : textures 16×16 du dessus et des côtés, posées en isométrie
+const GRASS_PALETTE = {
+    a: '#5f9e2f', b: '#6fb33a', c: '#7fc443', d: '#538c28',
+    e: '#866043', f: '#6c4a32', g: '#a0774f', k: '#7d7a76'
 }
 
-// Icônes proposées à la création d'une instance locale
-const PICKER_ICONS = ['castle', 'cog', 'sword', 'pickaxe', 'tree', 'compass', 'star', 'flask', 'block']
-
-const THEME_KEYWORDS = [
-    ['castle', /colon|village|town|ville|kingdom|royaume|empire|conquer|conquete|civili/],
-    ['sword', /pvp|faction|\bwar|guerre|combat|battle|bataille|arena|arene/],
-    ['star', /magi|sorcel|wizard|arcan|enchant|\bmana\b/],
-    ['cog', /create|tech|indus|mekanism|thermal|engineer|ingenieur|machine|automat/],
-    ['flask', /potion|alchem|alchim|chimi|\blab\b/],
-    ['compass', /explor|aventure|adventure|voyage|\brpg\b|quest|quete/],
-    ['tree', /sky|\biles?\b|nature|forest|foret|biome|jardin|garden|farm|ferme/],
-    ['pickaxe', /surviv|survie|mining|minage|hardcore|\bcaves?\b|grotte/]
+const GRASS_TOP = [
+    'bbdcababacbbcabb',
+    'babdbdbbbbacbdaa',
+    'cdadcbbbabbcbaad',
+    'ccbbbbdbbabbcdac',
+    'adbaadddaddacbab',
+    'cacdacaacabbbbdd',
+    'abaacdbdacacbdaa',
+    'bbbcdcadacdabacd',
+    'baaabbaabbbbbddb',
+    'bbacbbcccacbabac',
+    'bbcccabdbbacbdaa',
+    'babdaddaacdaabcb',
+    'adbbbccdbbbcdccd',
+    'bdbabccacaabcabc',
+    'aaaddbbbabddadba',
+    'dccbdddbbcbbdbab'
 ]
 
-const LOADER_ICONS = {
-    forge: 'anvil',
-    neoforge: 'anvil',
-    fabric: 'spool',
-    legacyfabric: 'spool',
-    quilt: 'quilt'
-}
+const GRASS_SIDE = [
+    'abbbbbbaaccbbaab',
+    'abbbbbbabacacacb',
+    'adacddacadbdbadb',
+    'dedbegdadfdeaded',
+    'fekdfgfbefekdffe',
+    'geefefedfefegffg',
+    'ffeefeeeeeeefeef',
+    'eefeegffeeeegfkf',
+    'ffeffffkfeffeeee',
+    'fffeeegeegeeeegg',
+    'eeffgekgeeeffeee',
+    'eggeeefegeefefgg',
+    'ggeeeeffgkeeeeke',
+    'efgffgffffeeefee',
+    'fegkfeeeeffeekee',
+    'ffeeeeeeegegggee'
+]
 
-// Teintes de fond, choisies pour rester dans l'ambiance braise/bronze du launcher
-const HUES = [12, 36, 145, 205, 268, 172, 335]
+const ANVIL = [
+    '................',
+    '................',
+    '................',
+    'oooooooooooooooo',
+    'ohhhhhhhhhhhhhho',
+    '.ollllllllllllmo',
+    '..oommmmmmmmmmso',
+    '....oommmmmmmsoo',
+    '......ommmmmso..',
+    '......ommmmmso..',
+    '.....ommmmmmmso.',
+    '...oolllllllllso',
+    '...ommmmmmmmmmso',
+    '...ooooooooooooo',
+    '................',
+    '................'
+]
 
-function normalize(text) {
-    return String(text || '')
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .toLowerCase()
-}
+const FABRIC = [
+    '................',
+    '................',
+    '..oooooooooooo..',
+    '..ollllllllllo..',
+    '..oltctctctcso..',
+    '..olccccccctso..',
+    '..oltcccccccso..',
+    '..olccccccctso..',
+    '..oltcccccccso..',
+    '..olccccccctso..',
+    '..oltcccccccso..',
+    '..olctctctctso..',
+    '..olssssssssso..',
+    '..oooooooooooo..',
+    '................',
+    '................'
+]
 
-function autoIconName(instance = {}) {
-    const name = normalize(`${instance.displayName || ''} ${instance.name || ''}`)
-    const theme = THEME_KEYWORDS.find(([, pattern]) => pattern.test(name))
-    if (theme) return theme[0]
-    return LOADER_ICONS[normalize(instance.loadder?.loadder_type)] || 'block'
-}
+const QUILT = [
+    '................',
+    '.oooooooooooooo.',
+    '.oPPPPPqNNNNNvo.',
+    '.oPppppqNnnnnvo.',
+    '.oPppppqNnnnnvo.',
+    '.oPppppqNnnnnvo.',
+    '.oPppppqNnnnnvo.',
+    '.oqqqqqqvvvvvvo.',
+    '.oMMMMMwRRRRRxo.',
+    '.oMmmmmwRrrrrxo.',
+    '.oMmmmmwRrrrrxo.',
+    '.oMmmmmwRrrrrxo.',
+    '.oMmmmmwRrrrrxo.',
+    '.owwwwwwxxxxxxo.',
+    '.oooooooooooooo.',
+    '................'
+]
 
-function resolveInstanceIcon(instance = {}) {
-    const icon = typeof instance.icon === 'string' ? instance.icon.trim() : ''
-    if (INSTANCE_ICONS[icon]) return { name: icon }
-    // Une valeur avec « / » ou « . » est traitée comme une image (URL ou chemin)
-    if (/[/.]/.test(icon)) return { name: autoIconName(instance), src: icon }
-    return { name: autoIconName(instance) }
-}
-
-function getInstanceHue(instance = {}) {
-    let hash = 0
-    for (const char of String(instance.displayName || instance.name || '')) {
-        hash = (hash * 31 + char.codePointAt(0)) >>> 0
+const LOADER_ART = {
+    forge: {
+        rows: ANVIL,
+        palette: { o: '#121418', h: '#c3cad6', l: '#8a93a3', m: '#5c6372', s: '#3a3f4a' }
+    },
+    neoforge: {
+        rows: ANVIL,
+        palette: { o: '#3b1606', h: '#ffc58f', l: '#f39a4d', m: '#d9692a', s: '#9c4116' }
+    },
+    fabric: {
+        rows: FABRIC,
+        palette: { o: '#38342a', l: '#f1ead7', c: '#dbd0b4', s: '#b7ab8d', t: '#6e6552' }
+    },
+    legacyfabric: {
+        rows: FABRIC,
+        palette: { o: '#232a36', l: '#dbe4f2', c: '#b6c4da', s: '#8d9db8', t: '#4b5870' }
+    },
+    quilt: {
+        rows: QUILT,
+        palette: {
+            o: '#1f1530',
+            P: '#c49bff', p: '#9b51ff', q: '#6a28c7',
+            N: '#86ceff', n: '#27a2fd', v: '#1772b8',
+            M: '#f38ff3', m: '#dc29dd', w: '#9c189d',
+            R: '#ffb688', r: '#fa7a3c', x: '#c2501b'
+        }
     }
-    return HUES[hash % HUES.length]
 }
 
-function createIconGlyph(name) {
-    const svg = document.createElementNS(SVG_NS, 'svg')
-    svg.setAttribute('viewBox', '0 0 24 24')
-    svg.setAttribute('aria-hidden', 'true')
-    const path = document.createElementNS(SVG_NS, 'path')
-    path.setAttribute('d', (INSTANCE_ICONS[name] || INSTANCE_ICONS.block).path)
-    svg.appendChild(path)
+function svgElement(name, attributes = {}) {
+    const element = document.createElementNS(SVG_NS, name)
+    for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value)
+    return element
+}
+
+// Une ligne de pixels de même couleur devient un seul rectangle
+function drawPixels(rows, palette) {
+    const group = svgElement('g')
+    rows.forEach((row, y) => {
+        let x = 0
+        while (x < row.length) {
+            const color = palette[row[x]]
+            let end = x + 1
+            while (end < row.length && row[end] === row[x]) end++
+            if (color) group.appendChild(svgElement('rect', { x, y, width: end - x, height: 1, fill: color }))
+            x = end
+        }
+    })
+    return group
+}
+
+// Face 16×16 projetée en isométrie ; `shade` assombrit les côtés comme dans l'inventaire du jeu
+function drawBlockFace(rows, transform, shade) {
+    const face = svgElement('g', { transform })
+    face.appendChild(svgElement('rect', { width: 16, height: 16, fill: GRASS_PALETTE.e }))
+    face.appendChild(drawPixels(rows, GRASS_PALETTE))
+    if (shade) face.appendChild(svgElement('rect', { width: 16, height: 16, fill: '#000', opacity: shade }))
+    return face
+}
+
+function createGrassBlock() {
+    const svg = svgElement('svg', { viewBox: '0 0 32 32', 'aria-hidden': 'true', class: 'instance-icon-art' })
+    svg.appendChild(drawBlockFace(GRASS_TOP, 'matrix(0.8125 0.40625 -0.8125 0.40625 16 2)', 0))
+    svg.appendChild(drawBlockFace(GRASS_SIDE, 'matrix(0.8125 0.40625 0 0.875 3 8.5)', 0.18))
+    svg.appendChild(drawBlockFace(GRASS_SIDE, 'matrix(0.8125 -0.40625 0 0.875 16 15)', 0.36))
     return svg
 }
 
-function createInstanceIcon(instance, className = 'instance-icon') {
-    const { name, src } = resolveInstanceIcon(instance)
+function createLoaderGlyph(loaderType) {
+    const art = LOADER_ART[String(loaderType || 'none').toLowerCase()]
+    if (!art) return createGrassBlock()
+
+    const svg = svgElement('svg', {
+        viewBox: '0 0 16 16',
+        'aria-hidden': 'true',
+        class: 'instance-icon-art is-pixel',
+        'shape-rendering': 'crispEdges'
+    })
+    svg.appendChild(drawPixels(art.rows, art.palette))
+    return svg
+}
+
+function createInstanceIcon(instance = {}, className = 'instance-icon') {
+    const loaderType = instance.loadder?.loadder_type
     const icon = document.createElement('span')
     icon.className = className
     icon.setAttribute('aria-hidden', 'true')
-    icon.style.setProperty('--instance-hue', getInstanceHue(instance))
 
-    if (src) {
+    // Une valeur avec « / » ou « . » est traitée comme une image (URL ou chemin)
+    const source = typeof instance.icon === 'string' ? instance.icon.trim() : ''
+    if (/[/.]/.test(source)) {
         const image = document.createElement('img')
         image.alt = ''
         image.addEventListener('error', () => {
             icon.classList.remove('has-image')
-            image.replaceWith(createIconGlyph(name))
+            image.replaceWith(createLoaderGlyph(loaderType))
         }, { once: true })
-        image.src = src
+        image.src = source
         icon.classList.add('has-image')
         icon.appendChild(image)
     } else {
-        icon.appendChild(createIconGlyph(name))
+        icon.appendChild(createLoaderGlyph(loaderType))
     }
 
     return icon
 }
 
-export { INSTANCE_ICONS, PICKER_ICONS, resolveInstanceIcon, createIconGlyph, createInstanceIcon }
+export { createLoaderGlyph, createInstanceIcon }
