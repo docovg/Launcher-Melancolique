@@ -105,6 +105,10 @@ class Index {
     async buildPlatform() {
         await this.Obfuscate();
         await builder.build({
+            // GitHub Actions publie les artefacts dans un job dédié. Cela évite
+            // que les builds Windows, Linux et macOS modifient la même release
+            // en parallèle et permet aussi de relancer proprement une version.
+            publish: "never",
             config: {
                 generateUpdatesFilesForAllChannels: false,
                 appId: packageBuild.appId,

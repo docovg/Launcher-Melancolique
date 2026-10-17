@@ -1,63 +1,117 @@
-# module du helios launcher
 name: Launcher Build
+
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 permissions:
   contents: write
 
+concurrency:
+  group: launcher-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Get version
-        run: echo "version=$(jq -r .version package.json)" >> $GITHUB_ENV
-      
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.version }}
-          release_name: release ${{ env.version }}
-          draft: false
-          prerelease: ${{ contains(env.version, 'beta') || contains(env.version, 'alpha') }}
-
   build-launcher:
-    needs: create-release
+    name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
-
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-14, ubuntu-latest, windows-latest]
+        include:
+          - os: windows-latest
+            platform: Windows
+            artifact: launcher-windows
+          - os: ubuntu-latest
+            platform: Linux
+            artifact: launcher-linux
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 20.x
+          cache: npm
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: 3.x
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
         shell: bash
 
-      - name: Build macOS (signed and notarized)
-        if: runner.os == 'macOS'
+      - name: Build launcher
+        run: npm run build
+        shell: bash
+
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.yml
+            dist/*.blockmap
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-14
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+
+      - name: Check Apple signing configuration
+        id: apple_signing
         env:
-          GH_TOKEN: ${{ secrets.github_token }}
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=()
+          for variable in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!variable}" ]; then
+              missing+=("$variable")
+            fi
+          done
+
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Build macOS ignoré : secrets Apple manquants (${missing[*]})."
+          fi
+        shell: bash
+
+      - name: Install dependencies
+        if: steps.apple_signing.outputs.enabled == 'true'
+        run: npm ci
+        shell: bash
+
+      - name: Build signed and notarized launcher
+        if: steps.apple_signing.outputs.enabled == 'true'
+        env:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -66,8 +120,8 @@ jobs:
         run: npm run build
         shell: bash
 
-      - name: Verify macOS signature and notarization
-        if: runner.os == 'macOS'
+      - name: Verify signature and notarization
+        if: steps.apple_signing.outputs.enabled == 'true'
         run: |
           APP_PATH="$(find dist -type d -name '*.app' -print -quit)"
           test -n "$APP_PATH"
@@ -76,9 +130,57 @@ jobs:
           xcrun stapler validate "$APP_PATH"
         shell: bash
 
-      - name: Build Linux and Windows
-        if: runner.os != 'macOS'
+      - name: Store macOS artifacts
+        if: steps.apple_signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: launcher-macos
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.yml
+            dist/*.blockmap
+
+  publish-release:
+    name: Publish GitHub release
+    needs: [build-launcher, build-macos]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release-artifacts
+
+      - name: Read release version
+        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_ENV"
+        shell: bash
+
+      - name: Create or update release
         env:
-          GH_TOKEN: ${{ secrets.github_token }}
-        run: npm run build
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ env.version }}
+        run: |
+          mapfile -d '' files < <(find release-artifacts -type f -print0)
+          test ${#files[@]} -gt 0
+
+          prerelease_args=()
+          if [[ "$VERSION" == *beta* || "$VERSION" == *alpha* ]]; then
+            prerelease_args+=(--prerelease)
+          fi
+
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release edit "$VERSION" --title "release $VERSION" "${prerelease_args[@]}"
+            gh release upload "$VERSION" "${files[@]}" --clobber
+          else
+            gh release create "$VERSION" "${files[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "release $VERSION" \
+              "${prerelease_args[@]}"
+          fi
         shell: bash
