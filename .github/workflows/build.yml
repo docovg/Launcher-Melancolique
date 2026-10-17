@@ -180,6 +180,16 @@ jobs:
             for file in "${files[@]}"; do
               gh release upload "$VERSION" "$file" --clobber
             done
+
+            # Nettoie les noms créés par les anciens envois directs, qui ne
+            # correspondent pas aux chemins utilisés par l'auto-updater.
+            for obsolete_asset in \
+              builder-debug.yml \
+              Launcher.Melancolique-linux-x86_64.AppImage \
+              Launcher.Melancolique-win-x64.exe \
+              Launcher.Melancolique-win-x64.exe.blockmap; do
+              gh release delete-asset "$VERSION" "$obsolete_asset" --yes 2>/dev/null || true
+            done
           else
             gh release create "$VERSION" "${files[@]}" \
               --target "$GITHUB_SHA" \

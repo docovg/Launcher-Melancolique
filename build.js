@@ -114,7 +114,9 @@ class Index {
                 appId: packageBuild.appId,
                 productName,
                 copyright: 'Copyright © 2020-2024 Atmoz',
-                artifactName: "${productName}-${os}-${arch}.${ext}",
+                // Le nom physique doit être identique au nom référencé dans
+                // latest*.yml. GitHub remplace sinon les espaces par des points.
+                artifactName: "Launcher-Melancolique-${os}-${arch}.${ext}",
                 extraMetadata: { main: 'app/app.js' },
                 files: ["app/**/*", "package.json", "LICENSE.md"],
                 directories: { "output": "dist" },
