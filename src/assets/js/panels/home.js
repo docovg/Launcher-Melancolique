@@ -90,7 +90,8 @@ class Home {
             loaderVersionInput: document.querySelector('.instance-loader-version-input'),
             formError: document.querySelector('.instance-form-error'),
             deletePopup: document.querySelector('.instance-delete-popup'),
-            deleteCopy: document.querySelector('.instance-delete-copy')
+            deleteCopy: document.querySelector('.instance-delete-copy'),
+            railTooltip: document.querySelector('.instance-rail-tooltip')
         }
 
         this.bindInstanceManagerEvents()
@@ -184,6 +185,7 @@ class Home {
 
     renderInstanceList() {
         const list = this.instanceUI.list
+        this.hideInstanceTooltip()
         list.replaceChildren()
 
         if (!this.instances.length) {
@@ -202,24 +204,32 @@ class Home {
             button.type = 'button'
             button.className = `instance-list-item${instance.source === 'local' ? ' is-local' : ''}${instance.name === this.selectedInstance?.name ? ' is-active' : ''}`
             button.dataset.instance = instance.name
-            button.title = instance.displayName || instance.name
+            const displayName = instance.displayName || instance.name
+            const minecraftVersion = instance.loadder?.minecraft_version || 'Version inconnue'
+            const loaderName = this.formatLoader(instance.loadder?.loadder_type)
+            const accessibleLabel = `${displayName} — Minecraft ${minecraftVersion}, ${loaderName}`
+            button.setAttribute('aria-label', accessibleLabel)
             button.setAttribute('aria-current', instance.name === this.selectedInstance?.name ? 'true' : 'false')
+            button.addEventListener('mouseenter', () => this.showInstanceTooltip(button, displayName, `${minecraftVersion} · ${loaderName}`))
+            button.addEventListener('mouseleave', () => this.hideInstanceTooltip())
+            button.addEventListener('focus', () => this.showInstanceTooltip(button, displayName, `${minecraftVersion} · ${loaderName}`))
+            button.addEventListener('blur', () => this.hideInstanceTooltip())
 
             const icon = document.createElement('span')
             icon.className = 'instance-list-icon'
             icon.setAttribute('aria-hidden', 'true')
-            icon.textContent = this.getInstanceInitials(instance.displayName || instance.name)
+            icon.textContent = this.getInstanceInitials(displayName)
 
             const copy = document.createElement('span')
             copy.className = 'instance-list-copy'
 
             const name = document.createElement('strong')
             name.className = 'instance-list-name'
-            name.textContent = instance.displayName || instance.name
+            name.textContent = displayName
 
             const meta = document.createElement('span')
             meta.className = 'instance-list-meta'
-            meta.textContent = `${instance.loadder?.minecraft_version || 'Version inconnue'} · ${this.formatLoader(instance.loadder?.loadder_type)}`
+            meta.textContent = `${minecraftVersion} · ${loaderName}`
 
             copy.append(name, meta)
             button.append(icon, copy)
@@ -228,7 +238,29 @@ class Home {
         }
 
         const count = this.instances.length
-        this.instanceUI.count.textContent = `${count} instance${count > 1 ? 's' : ''}`
+        const countLabel = `${count} instance${count > 1 ? 's' : ''}`
+        this.instanceUI.count.textContent = count
+        this.instanceUI.count.title = countLabel
+        this.instanceUI.count.setAttribute('aria-label', countLabel)
+    }
+
+    showInstanceTooltip(button, name, meta) {
+        const tooltip = this.instanceUI.railTooltip
+        const manager = tooltip?.closest('.instance-manager')
+        if (!tooltip || !manager) return
+
+        const buttonRect = button.getBoundingClientRect()
+        const managerRect = manager.getBoundingClientRect()
+        tooltip.querySelector('.instance-rail-tooltip-name').textContent = name
+        tooltip.querySelector('.instance-rail-tooltip-meta').textContent = meta
+        tooltip.style.top = `${buttonRect.top - managerRect.top + buttonRect.height / 2}px`
+        tooltip.classList.add('is-visible')
+    }
+
+    hideInstanceTooltip() {
+        const tooltip = this.instanceUI?.railTooltip
+        if (!tooltip) return
+        tooltip.classList.remove('is-visible')
     }
 
     async selectInstance(instanceName) {
