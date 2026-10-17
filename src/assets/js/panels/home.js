@@ -534,7 +534,9 @@ class Home {
         let progressBar = document.querySelector('.progress-bar')
 
         let opt = {
-            url: options.url,
+            url: options.url
+                ? `${options.url}${options.url.includes('?') ? '&' : '?'}v=${Date.now()}`
+                : options.url,
             authenticator: authenticator,
             timeout: 10000,
             path: `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}`,

@@ -24,8 +24,8 @@ class Config {
     }
 
     async getInstanceList() {
-        let urlInstance = `${url}/files/`
-        let instances = await nodeFetch(urlInstance).then(async res => {
+        let urlInstance = `${url}/files/?v=${Date.now()}`
+        let instances = await nodeFetch(urlInstance, { headers: { 'Cache-Control': 'no-cache' } }).then(async res => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             return await res.json()
         }).catch(error => {

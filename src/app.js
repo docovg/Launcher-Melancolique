@@ -79,24 +79,28 @@ function migrateOldUserDataIfNeeded() {
           path.join(app.getPath('appData'), 'Electron')
         ];
 
-    // Accounts and settings are stored in this SQLite database in production.
-    // Use a separate marker so the old JSON migration cannot skip it.
-    const databaseFlag = path.join(newDir, 'database-migrated-v2.flag');
-    const databaseDestination = path.join(newDir, 'databases', 'Databases.db');
+    // Keep accounts outside Electron's userData directory. Some installer and
+    // updater flows can recreate that directory, while the game data directory
+    // is deliberately preserved between launcher updates.
+    const databaseDestination = path.join(
+      app.getPath('appData'),
+      '.LauncherMelancolique',
+      'launcher-data',
+      'databases',
+      'Databases.db'
+    );
 
-    if (!fs.existsSync(databaseFlag)) {
-      if (!fs.existsSync(databaseDestination)) {
-        for (const oldDir of candidates) {
-          const databaseSource = path.join(oldDir, 'databases', 'Databases.db');
-          if (!fs.existsSync(databaseSource)) continue;
+    if (!fs.existsSync(databaseDestination)) {
+      const databaseCandidates = [newDir, ...candidates];
+      for (const oldDir of databaseCandidates) {
+        const databaseSource = path.join(oldDir, 'databases', 'Databases.db');
+        if (!fs.existsSync(databaseSource)) continue;
 
-          fs.mkdirSync(path.dirname(databaseDestination), { recursive: true });
-          fs.copyFileSync(databaseSource, databaseDestination);
-          console.log('[Migrate] Copied database from', oldDir);
-          break;
-        }
+        fs.mkdirSync(path.dirname(databaseDestination), { recursive: true });
+        fs.copyFileSync(databaseSource, databaseDestination);
+        console.log('[Migrate] Copied database from', oldDir);
+        break;
       }
-      fs.writeFileSync(databaseFlag, 'ok');
     }
 
     if (fs.existsSync(flag)) return;
@@ -154,6 +158,12 @@ if (!app.requestSingleInstanceLock()) {
 
   ipcMain.handle('path-user-data', () => app.getPath('userData'));
   ipcMain.handle('appData', () => app.getPath('appData'));
+  ipcMain.handle('launcher-database-path', () => path.join(
+    app.getPath('appData'),
+    '.LauncherMelancolique',
+    'launcher-data',
+    'databases'
+  ));
 
   ipcMain.on('main-window-maximize', () => {
     if (MainWindow.getWindow().isMaximized()) MainWindow.getWindow().unmaximize();

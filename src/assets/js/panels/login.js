@@ -226,6 +226,8 @@ class Login {
         }
 
         await this.db.updateData('configClient', configClient);
+        const persistedAccount = await this.db.readData('accounts', account.ID)
+        if (!persistedAccount) throw new Error('Le compte Microsoft n’a pas pu être sauvegardé localement.')
         await addAccount(account);
         await accountSelect(account);
         changePanel('home');

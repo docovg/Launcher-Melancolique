@@ -11,11 +11,15 @@ let dev = process.env.NODE_ENV === 'dev';
 
 class database {
     async creatDatabase(tableName, tableConfig) {
+        const databasePath = dev
+            ? `${await ipcRenderer.invoke('path-user-data')}../..`
+            : await ipcRenderer.invoke('launcher-database-path')
+
         return await nodedatabase.intilize({
             databaseName: 'Databases',
             fileType: dev ? 'sqlite' : 'db',
             tableName: tableName,
-            path: `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`,
+            path: databasePath,
             tableColumns: tableConfig,
         });
     }
