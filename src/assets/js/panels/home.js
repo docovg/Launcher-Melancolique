@@ -6,6 +6,7 @@ import { config, database, logger, changePanel, appdata, setStatus, pkg, popup }
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
+const fs = require('fs')
 const path = require('path')
 
 class Home {
@@ -566,6 +567,19 @@ class Home {
             }
         }
 
+        try {
+            this.quarantineInstanceFiles(opt.path, opt.instance, options.disabledFiles)
+        } catch (error) {
+            let popupError = new popup()
+            popupError.openPopup({
+                title: 'Fichier incompatible',
+                content: `Impossible de désactiver un mod incompatible : ${error.message}`,
+                color: 'var(--danger-color)',
+                options: true
+            })
+            return
+        }
+
         launch.Launch(opt);
 
         playInstanceBTN.style.display = "none"
@@ -652,6 +666,36 @@ class Home {
             new logger(pkg.name, '#7289da');
             console.log(err);
         });
+    }
+
+    quarantineInstanceFiles(launcherRoot, instanceName, disabledFiles = []) {
+        if (!Array.isArray(disabledFiles) || !disabledFiles.length) return
+
+        const instanceRoot = path.resolve(launcherRoot, 'instances', instanceName)
+        const quarantineRoot = path.join(instanceRoot, '.launcher-disabled')
+
+        for (const relativeFile of disabledFiles) {
+            if (typeof relativeFile !== 'string' || !relativeFile.trim()) continue
+
+            const source = path.resolve(instanceRoot, relativeFile)
+            const relativeSource = path.relative(instanceRoot, source)
+            if (!relativeSource || relativeSource.startsWith('..') || path.isAbsolute(relativeSource)) {
+                console.warn(`[Instances] Chemin de désactivation refusé : ${relativeFile}`)
+                continue
+            }
+
+            if (!fs.existsSync(source) || !fs.statSync(source).isFile()) continue
+
+            fs.mkdirSync(quarantineRoot, { recursive: true })
+            const disabledName = `${path.basename(source)}.disabled`
+            let destination = path.join(quarantineRoot, disabledName)
+            if (fs.existsSync(destination)) {
+                destination = path.join(quarantineRoot, `${Date.now()}-${disabledName}`)
+            }
+
+            fs.renameSync(source, destination)
+            console.info(`[Instances] Fichier incompatible désactivé : ${relativeSource}`)
+        }
     }
 
     normalizeLoaderBuild(loader = {}) {
