@@ -545,7 +545,7 @@ class Home {
 
             loader: {
                 type: options.loadder.loadder_type == 'none' ? null : options.loadder.loadder_type,
-                build: options.loadder.loadder_version || 'latest',
+                build: this.normalizeLoaderBuild(options.loadder),
                 enable: options.loadder.loadder_type == 'none' ? false : true
             },
 
@@ -637,7 +637,7 @@ class Home {
 
             popupError.openPopup({
                 title: 'Erreur',
-                content: err.error,
+                content: this.formatLaunchError(err?.error),
                 color: 'red',
                 options: true
             })
@@ -652,6 +652,35 @@ class Home {
             new logger(pkg.name, '#7289da');
             console.log(err);
         });
+    }
+
+    normalizeLoaderBuild(loader = {}) {
+        const type = String(loader.loadder_type || '').toLowerCase()
+        const minecraftVersion = String(loader.minecraft_version || '').trim()
+        const build = String(loader.loadder_version || 'latest').trim()
+
+        if (
+            type === 'forge' &&
+            minecraftVersion &&
+            !['latest', 'recommended'].includes(build.toLowerCase()) &&
+            /^\d+(?:\.\d+)+$/.test(build)
+        ) {
+            return `${minecraftVersion}-${build}`
+        }
+
+        return build
+    }
+
+    formatLaunchError(error) {
+        const message = typeof error === 'string'
+            ? error
+            : error?.message || 'Le lancement de Minecraft a échoué.'
+
+        if (message.includes('Available builds:')) {
+            return `${message.split(', Available builds:')[0]}. Vérifie la version du chargeur configurée pour cette instance.`
+        }
+
+        return message
     }
 
     getdate(e) {
