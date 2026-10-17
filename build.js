@@ -8,13 +8,57 @@ const Jimp = require('jimp');
 
 const { productName, build: packageBuild } = require('./package.json');
 
+function getMacBuildOptions() {
+    const isMac = process.platform === 'darwin';
+    const allowUnsignedBuild = process.env.ALLOW_UNSIGNED_MAC_BUILD === 'true';
+    const requiredVariables = [
+        'CSC_LINK',
+        'CSC_KEY_PASSWORD',
+        'APPLE_ID',
+        'APPLE_APP_SPECIFIC_PASSWORD',
+        'APPLE_TEAM_ID'
+    ];
+    const configuredVariables = requiredVariables.filter(name => process.env[name]);
+
+    if (isMac && configuredVariables.length > 0 && configuredVariables.length < requiredVariables.length) {
+        const missingVariables = requiredVariables.filter(name => !process.env[name]);
+        throw new Error(`Configuration macOS incomplète. Variables manquantes : ${missingVariables.join(', ')}`);
+    }
+
+    if (isMac && !allowUnsignedBuild && configuredVariables.length === 0) {
+        throw new Error(
+            'Le build macOS de production exige un certificat Developer ID et les identifiants de notarisation Apple. ' +
+            `Configurez ${requiredVariables.join(', ')}, ou utilisez npm run build:unsigned uniquement pour un test local.`
+        );
+    }
+
+    return {
+        icon: "./app/assets/images/icon.icns",
+        category: "public.app-category.games",
+        hardenedRuntime: true,
+        gatekeeperAssess: false,
+        forceCodeSigning: isMac && !allowUnsignedBuild,
+        notarize: configuredVariables.length === requiredVariables.length
+            ? { teamId: process.env.APPLE_TEAM_ID }
+            : false,
+        target: [{
+            target: "dmg",
+            arch: "universal"
+        },
+        {
+            target: "zip",
+            arch: "universal"
+        }]
+    };
+}
+
 class Index {
     async init() {
         this.obf = true
         this.Fileslist = []
-        process.argv.forEach(async val => {
+        for (const val of process.argv) {
             if (val.startsWith('--icon')) {
-                return this.iconSet(val.split('=')[1])
+                await this.iconSet(val.split('=')[1])
             }
 
             if (val.startsWith('--obf')) {
@@ -24,9 +68,9 @@ class Index {
 
             if (val.startsWith('--build')) {
                 let buildType = val.split('=')[1]
-                if (buildType == 'platform') return await this.buildPlatform()
+                if (buildType == 'platform') await this.buildPlatform()
             }
-        });
+        }
     }
 
     async Obfuscate() {
@@ -60,7 +104,7 @@ class Index {
 
     async buildPlatform() {
         await this.Obfuscate();
-        builder.build({
+        await builder.build({
             config: {
                 generateUpdatesFilesForAllChannels: false,
                 appId: packageBuild.appId,
@@ -89,19 +133,7 @@ class Index {
                     createDesktopShortcut: true,
                     runAfterFinish: true
                 },
-                mac: {
-                    icon: "./app/assets/images/icon.icns",
-                    category: "public.app-category.games",
-                    identity: null,
-                    target: [{
-                        target: "dmg",
-                        arch: "universal"
-                    },
-                    {
-                        target: "zip",
-                        arch: "universal"
-                    }]
-                },
+                mac: getMacBuildOptions(),
                 linux: {
                     icon: "./app/assets/images/icon.png",
                     target: [{
@@ -110,11 +142,8 @@ class Index {
                     }]
                 }
             }
-        }).then(() => {
-            console.log('le build est terminé')
-        }).catch(err => {
-            console.error('Error during build!', err)
         })
+        console.log('le build est terminé')
     }
 
     getFiles(path, file = []) {
@@ -145,4 +174,7 @@ class Index {
     }
 }
 
-new Index().init();
+new Index().init().catch(err => {
+    console.error('Error during build!', err)
+    process.exitCode = 1
+});
