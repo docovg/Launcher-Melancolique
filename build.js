@@ -8,6 +8,8 @@ const Jimp = require('jimp');
 
 const { productName, build: packageBuild } = require('./package.json');
 
+const isLocalMacBuild = process.platform === 'darwin' && process.env.ALLOW_UNSIGNED_MAC_BUILD === 'true';
+
 function getMacBuildOptions() {
     const isMac = process.platform === 'darwin';
     const allowUnsignedBuild = process.env.ALLOW_UNSIGNED_MAC_BUILD === 'true';
@@ -41,14 +43,12 @@ function getMacBuildOptions() {
         notarize: configuredVariables.length === requiredVariables.length
             ? { teamId: process.env.APPLE_TEAM_ID }
             : false,
-        target: [{
-            target: "dmg",
-            arch: "universal"
-        },
-        {
-            target: "zip",
-            arch: "universal"
-        }]
+        target: allowUnsignedBuild
+            ? [{ target: "dmg", arch: "universal" }]
+            : [
+                { target: "dmg", arch: "universal" },
+                { target: "zip", arch: "universal" }
+            ]
     };
 }
 
@@ -117,10 +117,10 @@ class Index {
                 // Le nom physique doit être identique au nom référencé dans
                 // latest*.yml. GitHub remplace sinon les espaces par des points.
                 artifactName: "Launcher-Melancolique-${os}-${arch}.${ext}",
-                extraMetadata: { main: 'app/app.js' },
+                extraMetadata: { main: 'app/app.js', localBuild: isLocalMacBuild },
                 files: ["app/**/*", "package.json", "LICENSE.md"],
                 directories: { "output": "dist" },
-                compression: 'maximum',
+                compression: isLocalMacBuild ? 'normal' : 'maximum',
                 asar: true,
                 publish: [{
                     provider: "github",

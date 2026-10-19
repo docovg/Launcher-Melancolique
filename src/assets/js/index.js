@@ -12,6 +12,8 @@ const nodeFetch = require("node-fetch");
 
 class Splash {
     constructor() {
+        this.updateDecisionMade = false;
+        this.maintenanceStarted = false;
         this.splash = document.querySelector(".splash");
         this.splashMessage = document.querySelector(".splash-message");
         this.splashAuthor = document.querySelector(".splash-author");
@@ -54,11 +56,9 @@ class Splash {
     async checkUpdate() {
         this.setStatus(`Recherche de mise à jour...`);
 
-        ipcRenderer.invoke('update-app').then().catch(err => {
-            return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${err.message}`);
-        });
-
         ipcRenderer.on('updateAvailable', () => {
+            if (this.updateDecisionMade) return;
+            this.updateDecisionMade = true;
             this.setStatus(`Mise à jour disponible !`);
             if (os.platform() == 'win32') {
                 this.toggleProgress();
@@ -68,7 +68,7 @@ class Splash {
         })
 
         ipcRenderer.on('error', (event, err) => {
-            if (err) return this.shutdown(`${err.message}`);
+            this.continueWithoutUpdate(err?.message);
         })
 
         ipcRenderer.on('download-progress', (event, progress) => {
@@ -77,9 +77,18 @@ class Splash {
         })
 
         ipcRenderer.on('update-not-available', () => {
+            if (this.updateDecisionMade) return;
+            this.updateDecisionMade = true;
             console.error("Mise à jour non disponible");
             this.maintenanceCheck();
         })
+
+        try {
+            const result = await ipcRenderer.invoke('update-app');
+            if (result?.ok === false) this.continueWithoutUpdate(result.message);
+        } catch (error) {
+            this.continueWithoutUpdate(error?.message || String(error));
+        }
     }
 
     getLatestReleaseForOS(os, preferredFormat, asset) {
@@ -92,29 +101,46 @@ class Splash {
     }
 
     async dowloadUpdate() {
-        const repoURL = pkg.repository.url.replace("git+", "").replace(".git", "").replace("https://github.com/", "").split("/");
-        const githubAPI = await nodeFetch('https://api.github.com').then(res => res.json()).catch(err => err);
+        try {
+            const [owner, repo] = pkg.repository.url
+                .replace("git+", "")
+                .replace(".git", "")
+                .replace("https://github.com/", "")
+                .split("/");
+            const response = await nodeFetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
+            if (!response.ok) throw new Error(`GitHub HTTP ${response.status}`);
 
-        const githubAPIRepoURL = githubAPI.repository_url.replace("{owner}", repoURL[0]).replace("{repo}", repoURL[1]);
-        const githubAPIRepo = await nodeFetch(githubAPIRepoURL).then(res => res.json()).catch(err => err);
+            const release = await response.json();
+            let latest;
 
-        const releases_url = await nodeFetch(githubAPIRepo.releases_url.replace("{/id}", '')).then(res => res.json()).catch(err => err);
-        const latestRelease = releases_url[0].assets;
-        let latest;
+            if (os.platform() == 'darwin') latest = this.getLatestReleaseForOS('mac', '.dmg', release.assets || []);
+            else if (os.platform() == 'linux') latest = this.getLatestReleaseForOS('linux', '.appimage', release.assets || []);
 
-        if (os.platform() == 'darwin') latest = this.getLatestReleaseForOS('mac', '.dmg', latestRelease);
-        else if (os == 'linux') latest = this.getLatestReleaseForOS('linux', '.appimage', latestRelease);
+            if (!latest?.browser_download_url) throw new Error('Aucun installateur compatible dans la dernière release.');
+
+            this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
+            document.querySelector(".download-update").addEventListener("click", () => {
+                shell.openExternal(latest.browser_download_url);
+                return this.shutdown("Téléchargement en cours...");
+            });
+        } catch (error) {
+            this.continueWithoutUpdate(error?.message || String(error));
+        }
+    }
 
 
-        this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
-        document.querySelector(".download-update").addEventListener("click", () => {
-            shell.openExternal(latest.browser_download_url);
-            return this.shutdown("Téléchargement en cours...");
-        });
+    continueWithoutUpdate(error) {
+        if (this.maintenanceStarted) return;
+        this.updateDecisionMade = true;
+        console.warn('[Updater] Démarrage sans mise à jour :', error || 'raison inconnue');
+        this.setStatus(`Mise à jour indisponible.<br>Démarrage du launcher...`);
+        setTimeout(() => this.maintenanceCheck(), 600);
     }
 
 
     async maintenanceCheck() {
+        if (this.maintenanceStarted) return;
+        this.maintenanceStarted = true;
         config.GetConfig().then(res => {
             if (res.maintenance) return this.shutdown(res.maintenance_message);
             this.startLauncher();

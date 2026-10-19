@@ -6,6 +6,7 @@
 const { app, ipcMain, nativeTheme } = require('electron');
 const { Microsoft } = require('minecraft-java-core');
 const { autoUpdater } = require('electron-updater')
+const pkg = require('../package.json');
 
 // RPC
 const RPC = require('discord-rpc');
@@ -192,12 +193,32 @@ if (!app.requestSingleInstanceLock()) {
 autoUpdater.autoDownload = false;
 
 ipcMain.handle('update-app', async () => {
-  return await new Promise(async (resolve, reject) => {
-    autoUpdater.checkForUpdates().then(res => resolve(res)).catch(error => {
-      reject({ error: true, message: error });
-    });
-  });
+  // Un build local ne possède volontairement ni canal de mise à jour macOS
+  // publié, ni signature Developer ID. Il doit quand même pouvoir démarrer.
+  if (pkg.localBuild === true) {
+    return { ok: false, skipped: true, message: 'Mise à jour désactivée pour ce build local.' };
+  }
+
+  try {
+    await autoUpdater.checkForUpdates();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: getErrorMessage(error) };
+  }
 });
+
+function getErrorMessage(error) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error?.message instanceof Error) return error.message.message;
+  if (typeof error?.message === 'string') return error.message;
+
+  try {
+    return JSON.stringify(error);
+  } catch (_) {
+    return 'Erreur inconnue';
+  }
+}
 
 autoUpdater.on('update-available', () => {
   const updateWindow = UpdateWindow.getWindow();
@@ -224,5 +245,5 @@ autoUpdater.on('download-progress', (progress) => {
 
 autoUpdater.on('error', (err) => {
   const updateWindow = UpdateWindow.getWindow();
-  if (updateWindow) updateWindow.webContents.send('error', err);
+  if (updateWindow) updateWindow.webContents.send('error', { message: getErrorMessage(err) });
 });
